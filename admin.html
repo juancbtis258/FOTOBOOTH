@@ -8,6 +8,8 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <style>
     body { background-color: #0b0e17; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
@@ -26,7 +28,10 @@
     }
   </style>
 </head>
-<body class="min-h-screen p-4 md:p-8 select-none">
+<body class="min-h-screen p-4 md:p-8 select-none relative">
+
+  <!-- NOTIFICACIÓN TOAST FLOTANTE -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- 1. LOGIN REDISEÑADO -->
   <div id="seccion-login" class="min-h-[85vh] flex items-center justify-center">
@@ -279,7 +284,7 @@
               <th class="pb-3 px-2">Fecha / Vigencia</th>
               <th class="pb-3 px-2">Creado Por</th>
               <th class="pb-3 px-2">PIN</th>
-              <th class="pb-3 px-2">Fotos Subidas</th>
+              <th class="pb-3 px-2">Fotos & Peso</th>
               <th class="pb-3 px-2">Herramientas</th>
               <th class="pb-3 px-2 text-right">Acciones</th>
             </tr>
@@ -329,6 +334,24 @@
     </div>
   </div>
 
+  <!-- MODAL DE CONFIRMACIÓN DE BORRADO SEGURO -->
+  <div id="modal-eliminar" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="panel-card p-6 rounded-3xl border border-rose-500/30 max-w-sm w-full space-y-4 relative">
+      <div class="w-12 h-12 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div class="text-center space-y-1">
+        <h3 class="text-sm font-black text-white">¿Eliminar Evento?</h3>
+        <p class="text-[11px] text-slate-400">Esta acción no se puede deshacer. Escribe <strong id="slug-eliminar-target" class="text-rose-400 font-mono"></strong> para confirmar:</p>
+      </div>
+      <input type="text" id="input-confirmar-slug" placeholder="Escribe el slug aquí" class="w-full bg-[#0b0e17] border border-slate-700 text-white font-mono text-center text-xs px-3 py-2.5 rounded-xl outline-none focus:border-rose-500">
+      <div class="flex gap-2">
+        <button onclick="cerrarModalEliminar()" class="flex-1 bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs">Cancelar</button>
+        <button onclick="confirmarEliminarEvento()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const PIN_MAESTRO = "9999"; 
     const SUPABASE_URL = 'https://ugtpsdcjeirfozzggorq.supabase.co';
@@ -339,8 +362,10 @@
     let usuarioActual = "";
     let todosLosEventos = [];
     let conteoFotosMap = {};
+    let pesoFotosMap = {};
     let filtroEstadoActual = 'todos';
     let slugEventoEnEdicion = "";
+    let slugAEliminar = "";
 
     const ICONOS_TIPO = {
       boda: '<i class="fa-solid fa-ring text-amber-400 mr-1.5"></i>',
@@ -358,6 +383,28 @@
         iniciarPanel();
       }
     });
+
+    function showToast(mensaje, tipo = 'exito') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColor = tipo === 'exito' ? 'bg-slate-900 border-amber-400/40 text-amber-300' : 'bg-slate-900 border-rose-500/40 text-rose-300';
+      const icono = tipo === 'exito' ? 'fa-circle-check text-amber-400' : 'fa-circle-exclamation text-rose-400';
+
+      toast.className = `${bgColor} border p-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 backdrop-blur-md transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `<i class="fa-solid ${icono} text-sm"></i> <span>${mensaje}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
 
     function togglePassword(inputId, iconId) {
       const input = document.getElementById(inputId);
@@ -389,9 +436,9 @@
 
     function generarSlugAutomatico(texto) {
       const slug = texto.toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quita acentos
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/&/g, 'y')
-        .replace(/[^a-z0-9 -]/g, '') // Quita símbolos raros
+        .replace(/[^a-z0-9 -]/g, '')
         .trim()
         .replace(/\s+/g, '-');
       
@@ -409,7 +456,7 @@
         usuarioActual = data.usuario;
         guardarSesion();
       } else {
-        alert("Usuario o contraseña incorrectos");
+        showToast("Usuario o contraseña incorrectos", "error");
       }
     }
 
@@ -420,7 +467,7 @@
         usuarioActual = "Admin Master";
         guardarSesion();
       } else {
-        alert("PIN Maestro incorrecto");
+        showToast("PIN Maestro incorrecto", "error");
       }
     }
 
@@ -463,9 +510,9 @@
       const pass = document.getElementById('nueva-pass').value.trim();
 
       const { error } = await _supabase.from('usuarios_colaboradores').insert([{ usuario: user, password: pass }]);
-      if (error) alert("Error al registrar: " + error.message);
+      if (error) showToast("Error al registrar: " + error.message, "error");
       else {
-        alert("Colaborador registrado exitosamente");
+        showToast("Colaborador registrado exitosamente");
         document.getElementById('nuevo-user').value = '';
         document.getElementById('nueva-pass').value = '';
         cargarUsuarios();
@@ -497,6 +544,7 @@
       if (!confirm("¿Deseas eliminar este usuario?")) return;
       await _supabase.from('usuarios_colaboradores').delete().eq('id', id);
       cargarUsuarios();
+      showToast("Colaborador eliminado");
     }
 
     async function guardarEvento(e) {
@@ -534,9 +582,9 @@
       let { error } = await _supabase.from('eventos').insert([nuevoObjeto]);
 
       if (error) {
-        alert("Error al guardar evento: " + error.message);
+        showToast("Error al guardar evento: " + error.message, "error");
       } else {
-        alert("¡Evento registrado con éxito!");
+        showToast("¡Evento registrado con éxito!");
         document.getElementById('input-nombre').value = '';
         document.getElementById('input-slug').value = '';
         document.getElementById('input-pin').value = '';
@@ -548,18 +596,20 @@
       const { data: eventos } = await _supabase.from('eventos').select('*').order('created_at', { ascending: false });
       todosLosEventos = eventos || [];
       
-      await obtenerConteoFotos();
+      await obtenerMetricasFotosStorage();
       await evaluarEventosVencidos();
       actualizarMetricas();
       renderizarTabla();
     }
 
-    async function obtenerConteoFotos() {
+    async function obtenerMetricasFotosStorage() {
       conteoFotosMap = {};
-      const { data: fotos } = await _supabase.from('fotos').select('evento_id');
+      pesoFotosMap = {};
+      const { data: fotos } = await _supabase.from('fotos').select('evento_id, url_foto');
       if (fotos) {
         fotos.forEach(f => {
           conteoFotosMap[f.evento_id] = (conteoFotosMap[f.evento_id] || 0) + 1;
+          pesoFotosMap[f.evento_id] = (pesoFotosMap[f.evento_id] || 0) + 0.35; // Estimación promedio de 350KB por foto optimizada
         });
       }
     }
@@ -612,6 +662,8 @@
       }
 
       const host = window.location.origin;
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
 
       tabla.innerHTML = eventosFiltrados.map(ev => {
         const urlGaleria = `${host}/index.html?evento=${ev.slug}`;
@@ -625,22 +677,34 @@
         const linkWhatsApp = `https://wa.me/?text=${encodeURIComponent(textoWS)}`;
 
         const esActivo = (ev.estado !== 'inactivo');
+        let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
+        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : 7;
+        
+        let porVencerBadge = "";
+        if (esActivo && ev.fecha_evento) {
+          const fechaCierre = new Date(ev.fecha_evento + "T00:00:00");
+          fechaCierre.setDate(fechaCierre.getDate() + diasExtra);
+          const diffDias = Math.ceil((fechaCierre - hoy) / (1000 * 60 * 60 * 24));
+          if (diffDias >= 0 && diffDias <= 2) {
+            porVencerBadge = `<span class="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[8px] font-black px-1.5 py-0.5 rounded ml-1 animate-pulse">¡Casi vence (${diffDias}d)!</span>`;
+          }
+        }
+
         const badgeEstado = esActivo 
           ? `<button onclick="cambiarEstado('${ev.slug}', 'inactivo')" title="Clic para Desactivar" class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">ACTIVO</button>`
           : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" title="Clic para Reactivar" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">INACTIVO</button>`;
 
         const botonEliminar = esAdmin
-          ? `<button type="button" onclick="eliminarEvento('${ev.slug}')" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
+          ? `<button type="button" onclick="abrirModalEliminar('${ev.slug}')" title="Eliminar Evento" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
           : `<span class="text-slate-600 text-[10px] italic"><i class="fa-solid fa-lock mr-1"></i>Protegido</span>`;
 
         const limiteVal = ev.limite_fotos || 500;
         const fotosSubidas = conteoFotosMap[ev.slug] || 0;
-        let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
-        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : 7;
+        const pesoConsumidoMB = (pesoFotosMap[ev.slug] || 0).toFixed(1);
 
         return `
           <tr class="hover:bg-slate-900/40">
-            <td class="py-4 px-2">${badgeEstado}</td>
+            <td class="py-4 px-2">${badgeEstado}${porVencerBadge}</td>
             <td class="py-4 px-2"><div class="font-bold text-amber-300 capitalize text-sm flex items-center">${tipoIcono} ${ev.slug.replace(/-/g, ' ')}</div></td>
             <td class="py-4 px-2">
               <div class="text-xs text-slate-200 font-mono flex items-center gap-1">
@@ -655,16 +719,22 @@
             <td class="py-4 px-2 text-slate-300 font-mono text-[11px] font-bold">${ev.creado_por || 'Sistema'}</td>
             <td class="py-4 px-2"><span class="font-mono text-slate-300 font-bold">${ev.pin_novios || '----'}</span> <button onclick="editarPin('${ev.slug}', '${ev.pin_novios}')" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
             <td class="py-4 px-2">
-              <div class="font-mono text-amber-300 text-[11px] font-bold">${fotosSubidas} / ${limiteVal} <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></div>
-              <div class="w-20 bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+              <div class="font-mono text-amber-300 text-[11px] font-bold flex items-center gap-1">
+                <span>${fotosSubidas} / ${limiteVal}</span>
+                <span class="text-[9px] text-slate-500 font-normal">(${pesoConsumidoMB} MB)</span>
+                <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button>
+              </div>
+              <div class="w-24 bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
                 <div class="bg-amber-400 h-1 rounded-full" style="width: ${Math.min(100, Math.round((fotosSubidas/limiteVal)*100))}%"></div>
               </div>
             </td>
             <td class="py-4 px-2 flex gap-1.5 flex-wrap items-center">
               <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2.5 py-1 rounded-lg border border-amber-400/30 font-bold flex items-center gap-1 hover:bg-amber-400/20 transition"><i class="fa-solid fa-list-check"></i> Módulos</button>
               
+              <button type="button" onclick="descargarZIPDirecto('${ev.slug}')" title="Descargar fotos en ZIP" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 hover:bg-emerald-600/30 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
+
               <select onchange="copiarAccesoRapido(this)" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded-lg border border-slate-700 font-bold outline-none cursor-pointer">
-                <option value="" selected disabled>Copiar Acceso ▾</option>
+                <option value="" selected disabled>Acceso ▾</option>
                 <option value="${urlGaleria}">📸 Galería Invitado</option>
                 <option value="${urlNovios}">💍 Panel Cliente</option>
                 <option value="${urlPantalla}">📺 Pantalla en Vivo</option>
@@ -677,6 +747,33 @@
           </tr>
         `;
       }).join('');
+    }
+
+    async function descargarZIPDirecto(slug) {
+      showToast(`Preparando paquete ZIP para ${slug}...`);
+      const { data: fotos } = await _supabase.from('fotos').select('*').eq('evento_id', slug);
+
+      if (!fotos || fotos.length === 0) {
+        showToast("No hay fotos para descargar en este evento", "error");
+        return;
+      }
+
+      try {
+        const zip = new JSZip();
+        const carpeta = zip.folder(`fotos_${slug}`);
+
+        for (let i = 0; i < fotos.length; i++) {
+          const res = await fetch(fotos[i].url_foto);
+          const blob = await res.blob();
+          carpeta.file(`foto_${i + 1}.jpg`, blob);
+        }
+
+        const contenidoZip = await zip.generateAsync({ type: "blob" });
+        saveAs(contenidoZip, `galeria_${slug}.zip`);
+        showToast("¡Paquete ZIP descargado!");
+      } catch (err) {
+        showToast("Error empaquetando el ZIP: " + err.message, "error");
+      }
     }
 
     function copiarAccesoRapido(selectEl) {
@@ -701,6 +798,7 @@
     async function cambiarEstado(slug, nuevoEstado) {
       await _supabase.from('eventos').update({ estado: nuevoEstado }).eq('slug', slug);
       cargarEventos();
+      showToast(`Evento marcado como ${nuevoEstado.toUpperCase()}`);
     }
 
     /* FUNCIONES PARA EDITAR ATRIBUTOS DEL EVENTO */
@@ -709,6 +807,7 @@
       if (nuevaFecha && nuevaFecha !== fechaActual) {
         await _supabase.from('eventos').update({ fecha_evento: nuevaFecha, estado: 'activo' }).eq('slug', slug);
         cargarEventos();
+        showToast("Fecha actualizada");
       }
     }
 
@@ -717,6 +816,7 @@
       if (nuevosDias !== null && !isNaN(nuevosDias)) {
         await _supabase.from('eventos').update({ dias_vencimiento: parseInt(nuevosDias), estado: 'activo' }).eq('slug', slug);
         cargarEventos();
+        showToast("Días de tolerancia actualizados");
       }
     }
 
@@ -755,9 +855,9 @@
         .eq('slug', slugEventoEnEdicion);
 
       if (error) {
-        alert("Error al actualizar módulos: " + error.message);
+        showToast("Error al actualizar módulos: " + error.message, "error");
       } else {
-        alert("¡Módulos actualizados con éxito!");
+        showToast("¡Módulos actualizados con éxito!");
         cerrarModalModulos();
         cargarEventos();
       }
@@ -768,6 +868,7 @@
       if (nuevoPin && nuevoPin !== pinActual) {
         await _supabase.from('eventos').update({ pin_novios: nuevoPin }).eq('slug', slug);
         cargarEventos();
+        showToast("PIN actualizado");
       }
     }
 
@@ -776,19 +877,37 @@
       if (nuevoLimite && !isNaN(nuevoLimite)) {
         await _supabase.from('eventos').update({ limite_fotos: parseInt(nuevoLimite) }).eq('slug', slug);
         cargarEventos();
+        showToast("Límite de fotos actualizado");
       }
     }
 
-    async function eliminarEvento(slug) {
-      if (confirm(`¿Deseas eliminar permanentemente el evento ${slug}?`)) {
-        await _supabase.from('eventos').delete().eq('slug', slug);
-        cargarEventos();
+    function abrirModalEliminar(slug) {
+      slugAEliminar = slug;
+      document.getElementById('slug-eliminar-target').innerText = slug;
+      document.getElementById('input-confirmar-slug').value = '';
+      document.getElementById('modal-eliminar').classList.remove('hidden');
+    }
+
+    function cerrarModalEliminar() {
+      document.getElementById('modal-eliminar').classList.add('hidden');
+    }
+
+    async function confirmarEliminarEvento() {
+      const inputVal = document.getElementById('input-confirmar-slug').value.trim();
+      if (inputVal !== slugAEliminar) {
+        showToast("El texto ingresado no coincide con el slug", "error");
+        return;
       }
+
+      await _supabase.from('eventos').delete().eq('slug', slugAEliminar);
+      cerrarModalEliminar();
+      cargarEventos();
+      showToast(`Evento '${slugAEliminar}' eliminado permanentemente`);
     }
 
     function copiar(texto) {
       navigator.clipboard.writeText(texto);
-      alert("Enlace copiado al portapapeles");
+      showToast("Enlace copiado al portapapeles");
     }
 
     function mostrarQR(slug, url) {
@@ -810,6 +929,7 @@
         a.href = img.src;
         a.download = `QR_Evento.png`;
         a.click();
+        showToast("Imagen QR descargada");
       }
     }
   </script>
