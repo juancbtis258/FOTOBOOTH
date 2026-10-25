@@ -222,7 +222,7 @@
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const urlParams = new URLSearchParams(window.location.search);
-    const slug = urlParams.get('evento') || 'evento-demo';
+    const slug = urlParams.get('evento');
 
     let preguntasTrivia = [];
     let indiceTrivia = 0;
@@ -239,38 +239,70 @@
       const tituloEl = document.getElementById('titulo-evento-publico');
       const btnPortal = document.getElementById('btn-acceso-portal');
 
+      if (!slug) {
+        document.body.innerHTML = `
+          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
+            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-amber-400/10 border border-amber-400/30 rounded-2xl flex items-center justify-center mx-auto text-amber-400 text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <h1 class="text-xl font-bold text-white">Evento no especificado</h1>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                No se indicó el parámetro de evento en el enlace. Escanea un código QR válido o ingresa desde tu panel de cliente.
+              </p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       if (tituloEl) tituloEl.innerText = slug.replace(/-/g, ' ');
       if (btnPortal) btnPortal.href = `/novios.html?evento=${slug}`;
 
       // Configuración de módulos y verificación de estado desde BD
-      const { data: evData } = await _supabase.from('eventos').select('*').eq('slug', slug').maybeSingle();
+      const { data: evData, error } = await _supabase.from('eventos').select('*').eq('slug', slug).maybeSingle();
 
-      if (evData) {
-        // VERIFICAR SI EL EVENTO ESTÁ INACTIVO
-        if (evData.estado === 'inactivo') {
-          document.body.innerHTML = `
-            <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
-              <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
-                <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-2xl">
-                  <i class="fa-solid fa-calendar-xmark"></i>
-                </div>
-                <h1 class="text-xl font-bold text-white">Evento Finalizado</h1>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                  La galería interactiva para <strong class="text-amber-300 capitalize">${slug.replace(/-/g, ' ')}</strong> ha concluido o se encuentra desactivada temporalmente.
-                </p>
+      if (error || !evData) {
+        document.body.innerHTML = `
+          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
+            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-2xl">
+                <i class="fa-solid fa-calendar-xmark"></i>
               </div>
+              <h1 class="text-xl font-bold text-white">Evento no encontrado</h1>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                El evento especificado no existe o la URL es incorrecta.
+              </p>
             </div>
-          `;
-          return;
-        }
-
-        if (evData.limite_fotos) limiteFotosEvento = evData.limite_fotos;
-        document.getElementById('cant-fotos-limite').innerText = limiteFotosEvento;
-
-        if (evData.inc_galeria === false) document.getElementById('tab-btn-pub-galeria').style.display = 'none';
-        if (evData.inc_libro === false) document.getElementById('tab-btn-pub-visitas').style.display = 'none';
-        if (evData.inc_trivia === false) document.getElementById('tab-btn-pub-trivia').style.display = 'none';
+          </div>
+        `;
+        return;
       }
+
+      // VERIFICAR SI EL EVENTO ESTÁ INACTIVO
+      if (evData.estado === 'inactivo') {
+        document.body.innerHTML = `
+          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
+            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-2xl">
+                <i class="fa-solid fa-calendar-xmark"></i>
+              </div>
+              <h1 class="text-xl font-bold text-white">Evento Finalizado</h1>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                La galería interactiva para <strong class="text-amber-300 capitalize">${slug.replace(/-/g, ' ')}</strong> ha concluido o se encuentra desactivada temporalmente.
+              </p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (evData.limite_fotos) limiteFotosEvento = evData.limite_fotos;
+      document.getElementById('cant-fotos-limite').innerText = limiteFotosEvento;
+
+      if (evData.inc_galeria === false) document.getElementById('tab-btn-pub-galeria').style.display = 'none';
+      if (evData.inc_libro === false) document.getElementById('tab-btn-pub-visitas').style.display = 'none';
+      if (evData.inc_trivia === false) document.getElementById('tab-btn-pub-trivia').style.display = 'none';
 
       cargarFotosPublicas();
       cargarPreguntasTrivia();
