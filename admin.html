@@ -100,9 +100,15 @@
           <h1 class="text-xl font-black text-white">Gestión de Eventos Zoe</h1>
         </div>
       </div>
-      <button type="button" onclick="cerrarSesion()" class="text-rose-400 text-xs font-bold flex items-center gap-1.5 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 transition hover:bg-rose-500/20">
-        <i class="fa-solid fa-right-from-bracket"></i> Salir
-      </button>
+      
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="exportarReporteCSV()" class="text-emerald-400 text-xs font-bold flex items-center gap-1.5 bg-emerald-500/10 px-3.5 py-2 rounded-xl border border-emerald-500/20 transition hover:bg-emerald-500/20">
+          <i class="fa-solid fa-file-excel"></i> Exportar CSV
+        </button>
+        <button type="button" onclick="cerrarSesion()" class="text-rose-400 text-xs font-bold flex items-center gap-1.5 bg-rose-500/10 px-3.5 py-2 rounded-xl border border-rose-500/20 transition hover:bg-rose-500/20">
+          <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </button>
+      </div>
     </div>
 
     <!-- METRICAS DE EVENTOS -->
@@ -609,7 +615,7 @@
       if (fotos) {
         fotos.forEach(f => {
           conteoFotosMap[f.evento_id] = (conteoFotosMap[f.evento_id] || 0) + 1;
-          pesoFotosMap[f.evento_id] = (pesoFotosMap[f.evento_id] || 0) + 0.35; // Estimación promedio de 350KB por foto optimizada
+          pesoFotosMap[f.evento_id] = (pesoFotosMap[f.evento_id] || 0) + 0.35; // Estimación promedio de 350KB por foto
         });
       }
     }
@@ -695,7 +701,7 @@
           : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" title="Clic para Reactivar" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">INACTIVO</button>`;
 
         const botonEliminar = esAdmin
-          ? `<button type="button" onclick="abrirModalEliminar('${ev.slug}')" title="Eliminar Evento" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
+          ? `<button type="button" onclick="abrirModalEliminar('${ev.slug}')" title="Eliminar Evento" class="text-rose-400 hover:text-rose-300 font-bold px-1 py-1"><i class="fa-solid fa-trash-can"></i></button>`
           : `<span class="text-slate-600 text-[10px] italic"><i class="fa-solid fa-lock mr-1"></i>Protegido</span>`;
 
         const limiteVal = ev.limite_fotos || 500;
@@ -728,10 +734,12 @@
                 <div class="bg-amber-400 h-1 rounded-full" style="width: ${Math.min(100, Math.round((fotosSubidas/limiteVal)*100))}%"></div>
               </div>
             </td>
-            <td class="py-4 px-2 flex gap-1.5 flex-wrap items-center">
-              <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2.5 py-1 rounded-lg border border-amber-400/30 font-bold flex items-center gap-1 hover:bg-amber-400/20 transition"><i class="fa-solid fa-list-check"></i> Módulos</button>
+            <td class="py-4 px-2 flex gap-1 flex-wrap items-center">
+              <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2 py-1 rounded-lg border border-amber-400/30 font-bold flex items-center gap-1 hover:bg-amber-400/20 transition"><i class="fa-solid fa-list-check"></i> Módulos</button>
               
               <button type="button" onclick="descargarZIPDirecto('${ev.slug}')" title="Descargar fotos en ZIP" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 hover:bg-emerald-600/30 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
+
+              <button type="button" onclick="vaciarFotosEvento('${ev.slug}')" title="Borrar fotos de prueba" class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 hover:bg-rose-500/20 transition"><i class="fa-solid fa-broom"></i> Vaciar</button>
 
               <select onchange="copiarAccesoRapido(this)" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded-lg border border-slate-700 font-bold outline-none cursor-pointer">
                 <option value="" selected disabled>Acceso ▾</option>
@@ -747,6 +755,19 @@
           </tr>
         `;
       }).join('');
+    }
+
+    async function vaciarFotosEvento(slug) {
+      if (!confirm(`¿Deseas VACIAR todas las fotos del evento '${slug}'? Esta acción eliminará las imágenes de prueba.`)) return;
+
+      const { error } = await _supabase.from('fotos').delete().eq('evento_id', slug);
+
+      if (error) {
+        showToast("Error al vaciar fotos: " + error.message, "error");
+      } else {
+        showToast(`Fotos del evento '${slug}' eliminadas correctamente`);
+        cargarEventos();
+      }
     }
 
     async function descargarZIPDirecto(slug) {
@@ -774,6 +795,30 @@
       } catch (err) {
         showToast("Error empaquetando el ZIP: " + err.message, "error");
       }
+    }
+
+    function exportarReporteCSV() {
+      if (todosLosEventos.length === 0) {
+        showToast("No hay eventos registrados para exportar", "error");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Slug,Nombre,Tipo,Fecha,Estado,PIN,Fotos_Subidas,Limite,Creado_Por\n";
+
+      todosLosEventos.forEach(ev => {
+        const fotosSubidas = conteoFotosMap[ev.slug] || 0;
+        csvContent += `"${ev.slug}","${ev.nombre_evento || ''}","${ev.tipo_evento || ''}","${ev.fecha_evento || ''}","${ev.estado}","${ev.pin_novios}",${fotosSubidas},${ev.limite_fotos || 500},"${ev.creado_por || ''}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Reporte_Eventos_Zoe_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast("Reporte descargado correctamente (.CSV)");
     }
 
     function copiarAccesoRapido(selectEl) {
