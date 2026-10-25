@@ -476,7 +476,7 @@
       const { data: eventos } = await _supabase.from('eventos').select('*').order('created_at', { ascending: false });
       todosLosEventos = eventos || [];
       
-      evaluarEventosVencidos();
+      await evaluarEventosVencidos();
       actualizarMetricas();
       renderizarTabla();
     }
@@ -543,8 +543,8 @@
 
         const esActivo = (ev.estado !== 'inactivo');
         const badgeEstado = esActivo 
-          ? `<button onclick="cambiarEstado('${ev.slug}', 'inactivo')" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold">ACTIVO</button>`
-          : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold">INACTIVO</button>`;
+          ? `<button onclick="cambiarEstado('${ev.slug}', 'inactivo')" title="Clic para Desactivar" class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">ACTIVO</button>`
+          : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" title="Clic para Reactivar" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">INACTIVO</button>`;
 
         const botonEliminar = esAdmin
           ? `<button type="button" onclick="eliminarEvento('${ev.slug}')" class="text-rose-400 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
@@ -558,7 +558,16 @@
           <tr class="hover:bg-slate-900/40">
             <td class="py-4 px-2">${badgeEstado}</td>
             <td class="py-4 px-2"><div class="font-bold text-amber-300 capitalize text-sm flex items-center">${tipoIcono} ${ev.slug.replace(/-/g, ' ')}</div></td>
-            <td class="py-4 px-2"><div class="text-xs text-slate-200 font-mono"><i class="fa-regular fa-calendar text-slate-500 mr-1"></i>${ev.fecha_evento || 'Sin fecha'}</div><div class="text-[9px] text-slate-500">${autoClose ? `Cierre auto +${diasExtra}d` : 'Manual'}</div></td>
+            <td class="py-4 px-2">
+              <div class="text-xs text-slate-200 font-mono flex items-center gap-1">
+                <i class="fa-regular fa-calendar text-slate-500"></i>${ev.fecha_evento || 'Sin fecha'}
+                <button onclick="editarFecha('${ev.slug}', '${ev.fecha_evento || ''}')" title="Editar Fecha" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button>
+              </div>
+              <div class="text-[9px] text-slate-500 flex items-center gap-1">
+                <span>${autoClose ? `Cierre auto +${diasExtra}d` : 'Manual'}</span>
+                <button onclick="editarDiasVencimiento('${ev.slug}', ${diasExtra})" title="Editar Días Vencimiento" class="text-slate-500 hover:text-amber-400"><i class="fa-solid fa-pen text-[9px]"></i></button>
+              </div>
+            </td>
             <td class="py-4 px-2 text-slate-300 font-mono text-[11px] font-bold">${ev.creado_por || 'Sistema'}</td>
             <td class="py-4 px-2"><span class="font-mono text-slate-300 font-bold">${ev.pin_novios || '----'}</span> <button onclick="editarPin('${ev.slug}', '${ev.pin_novios}')" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
             <td class="py-4 px-2"><span class="font-mono text-slate-400 text-[11px] font-bold">${limiteVal} fotos</span> <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
@@ -593,7 +602,23 @@
       cargarEventos();
     }
 
-    /* FUNCIONES PARA EDITAR MÓDULOS DEL EVENTO DIRECTO EN BD */
+    /* FUNCIONES PARA EDITAR ATRIBUTOS DEL EVENTO */
+    async function editarFecha(slug, fechaActual) {
+      const nuevaFecha = prompt("Nueva Fecha del Evento (AAAA-MM-DD):", fechaActual);
+      if (nuevaFecha && nuevaFecha !== fechaActual) {
+        await _supabase.from('eventos').update({ fecha_evento: nuevaFecha, estado: 'activo' }).eq('slug', slug);
+        cargarEventos();
+      }
+    }
+
+    async function editarDiasVencimiento(slug, diasActuales) {
+      const nuevosDias = prompt("Días adicionales de tolerancia después de la fecha:", diasActuales);
+      if (nuevosDias !== null && !isNaN(nuevosDias)) {
+        await _supabase.from('eventos').update({ dias_vencimiento: parseInt(nuevosDias), estado: 'activo' }).eq('slug', slug);
+        cargarEventos();
+      }
+    }
+
     async function abrirModalModulos(slug) {
       slugEventoEnEdicion = slug;
       document.getElementById('modulos-titulo').innerText = `Módulos - ${slug.replace(/-/g, ' ')}`;
