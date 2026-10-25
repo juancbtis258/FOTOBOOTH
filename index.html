@@ -14,21 +14,55 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    /* VARIABLES DE TEMA */
+    :root {
+      --bg-main: #0b0e17;
+      --card-bg: #0f1523;
+      --card-border: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: #0b0e17;
+    }
+
+    body.theme-light {
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --input-bg: #f8fafc;
+    }
+
     body {
-      background-color: #0b0e17;
-      color: #f8fafc;
+      background-color: var(--bg-main);
+      color: var(--text-main);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
+
     .panel-card {
-      background-color: #0f1523;
-      border: 1px solid #1e293b;
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
     }
+
     .gold-button {
       background: linear-gradient(135deg, #f3c262, #e0aa3e);
       color: #0d111d;
     }
+
     .gold-button:hover {
       filter: brightness(1.1);
+    }
+
+    .theme-text-muted {
+      color: var(--text-muted);
+    }
+
+    .theme-input {
+      background-color: var(--input-bg);
+      border-color: var(--card-border);
+      color: var(--text-main);
     }
   </style>
 </head>
@@ -37,18 +71,25 @@
   <!-- ENCABEZADO -->
   <header class="max-w-4xl mx-auto panel-card p-5 rounded-3xl mb-6 shadow-2xl flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="bg-amber-400/10 text-amber-400 font-bold p-2.5 rounded-2xl border border-amber-400/20 text-xs">
+      <div class="bg-amber-400/10 text-amber-500 font-bold p-2.5 rounded-2xl border border-amber-400/20 text-xs">
         ZC
       </div>
       <div>
-        <span class="text-[10px] font-black text-amber-400 tracking-widest uppercase block">Galería Interactiva</span>
-        <h1 id="titulo-evento-publico" class="text-base font-black text-white capitalize">Cargando Evento...</h1>
+        <span class="text-[10px] font-black text-amber-500 tracking-widest uppercase block">Galería Interactiva</span>
+        <h1 id="titulo-evento-publico" class="text-base font-black capitalize">Cargando Evento...</h1>
       </div>
     </div>
 
-    <a id="btn-acceso-portal" href="#" class="border border-slate-700 hover:border-amber-400/50 text-slate-300 px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5">
-      <i class="fa-solid fa-lock text-amber-400"></i> Portal del Evento
-    </a>
+    <div class="flex items-center gap-2">
+      <!-- BOTÓN DE CAMBIO DE TEMA -->
+      <button onclick="toggleTema()" title="Cambiar Tema" class="border border-slate-700/60 hover:border-amber-400/50 text-amber-400 p-2 rounded-full text-xs font-bold transition flex items-center justify-center w-8 h-8">
+        <i id="theme-icon" class="fa-solid fa-sun"></i>
+      </button>
+
+      <a id="btn-acceso-portal" href="#" class="border border-slate-700/60 hover:border-amber-400/50 theme-text-muted px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-lock text-amber-500"></i> Portal del Evento
+      </a>
+    </div>
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
@@ -57,8 +98,8 @@
     <!-- ZONA DE SUBIDA RÁPIDA -->
     <div class="panel-card p-6 md:p-8 rounded-3xl shadow-2xl text-center space-y-4">
       <div class="space-y-1">
-        <h2 class="text-base font-bold text-white">¡Comparte tus fotos con los festejados!</h2>
-        <p class="text-xs text-slate-400 max-w-md mx-auto">Captura los mejores momentos del evento y súbelos directamente a la galería oficial.</p>
+        <h2 class="text-base font-bold">¡Comparte tus fotos con los festejados!</h2>
+        <p class="text-xs theme-text-muted max-w-md mx-auto">Captura los mejores momentos del evento y súbelos directamente a la galería oficial.</p>
       </div>
 
       <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
@@ -68,14 +109,14 @@
         </button>
         <input type="file" id="input-camara-invitado" accept="image/*" capture="environment" class="hidden" onchange="subirFotoInvitado(event)">
 
-        <label for="input-foto-invitado" class="border border-slate-700 hover:border-amber-400/50 text-slate-300 px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
+        <label for="input-foto-invitado" class="border border-slate-700/60 hover:border-amber-400/50 theme-text-muted px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
           <i class="fa-solid fa-images text-base"></i>
           <span>Elegir Varias Fotos</span>
         </label>
         <input type="file" id="input-foto-invitado" accept="image/*" multiple class="hidden" onchange="subirFotoInvitado(event)">
       </div>
 
-      <p id="subiendo-indicador-publico" class="text-xs text-amber-300 font-bold hidden flex items-center justify-center gap-2 py-2">
+      <p id="subiendo-indicador-publico" class="text-xs text-amber-500 font-bold hidden flex items-center justify-center gap-2 py-2">
         <i class="fa-solid fa-spinner fa-spin"></i> <span id="texto-progreso-publico">Subiendo...</span>
       </p>
     </div>
@@ -83,24 +124,24 @@
     <!-- PROGRESO -->
     <div class="panel-card p-4 rounded-2xl space-y-2">
       <div class="flex justify-between text-xs font-bold">
-        <span class="text-slate-300 flex items-center gap-1.5"><i class="fa-solid fa-images text-amber-400"></i> Progreso de la Galería</span>
-        <span class="text-amber-400"><span id="cant-fotos-actual">0</span> / <span id="cant-fotos-limite">500</span> fotos</span>
+        <span class="theme-text-muted flex items-center gap-1.5"><i class="fa-solid fa-images text-amber-500"></i> Progreso de la Galería</span>
+        <span class="text-amber-500"><span id="cant-fotos-actual">0</span> / <span id="cant-fotos-limite">500</span> fotos</span>
       </div>
-      <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+      <div class="w-full bg-slate-900/10 rounded-full h-2 overflow-hidden border border-slate-700/30">
         <div id="barra-progreso-galeria" class="bg-amber-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
       </div>
     </div>
 
     <!-- PESTAÑAS PÚBLICAS -->
     <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
-      <div class="flex items-center gap-4 md:gap-6 border-b border-slate-800 pb-3 overflow-x-auto">
-        <button id="tab-btn-pub-galeria" onclick="cambiarTabPublico('galeria')" class="text-sm font-bold text-amber-400 border-b-2 border-amber-400 pb-2 transition flex items-center gap-2 whitespace-nowrap">
+      <div class="flex items-center gap-4 md:gap-6 border-b border-slate-700/30 pb-3 overflow-x-auto">
+        <button id="tab-btn-pub-galeria" onclick="cambiarTabPublico('galeria')" class="text-sm font-bold text-amber-500 border-b-2 border-amber-400 pb-2 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-photo-film"></i> Galería en Vivo
         </button>
-        <button id="tab-btn-pub-visitas" onclick="cambiarTabPublico('visitas')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+        <button id="tab-btn-pub-visitas" onclick="cambiarTabPublico('visitas')" class="text-sm font-bold theme-text-muted hover:text-amber-500 pb-2 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-envelope"></i> Libro de Visitas (Privado)
         </button>
-        <button id="tab-btn-pub-trivia" onclick="cambiarTabPublico('trivia')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+        <button id="tab-btn-pub-trivia" onclick="cambiarTabPublico('trivia')" class="text-sm font-bold theme-text-muted hover:text-amber-500 pb-2 transition flex items-center gap-2 whitespace-nowrap">
           <i class="fa-solid fa-gamepad"></i> ¿Quién conoce más a los festejados?
         </button>
       </div>
@@ -108,16 +149,16 @@
       <!-- SECCIÓN GALERÍA -->
       <div id="tab-pub-galeria" class="space-y-4">
         <div id="galeria-publica-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="col-span-full py-12 text-center text-slate-500 text-xs">Cargando fotos del evento...</div>
+          <div class="col-span-full py-12 text-center theme-text-muted text-xs">Cargando fotos del evento...</div>
         </div>
       </div>
 
       <!-- SECCIÓN MENSAJES -->
       <div id="tab-pub-visitas" class="hidden space-y-4">
-        <form onsubmit="enviarMensajePrivado(event)" class="bg-[#0b0e17] p-4 rounded-2xl border border-slate-800 space-y-3">
-          <h3 class="text-xs font-bold text-amber-300">Deja tus felicidades y mejores deseos:</h3>
-          <input type="text" id="nombre-invitado-mensaje" placeholder="Tu nombre" required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
-          <textarea id="texto-invitado-mensaje" rows="3" placeholder="Escribe tu mensaje aquí..." required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none"></textarea>
+        <form onsubmit="enviarMensajePrivado(event)" class="panel-card p-4 rounded-2xl border space-y-3">
+          <h3 class="text-xs font-bold text-amber-500">Deja tus felicidades y mejores deseos:</h3>
+          <input type="text" id="nombre-invitado-mensaje" placeholder="Tu nombre" required class="w-full theme-input border text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+          <textarea id="texto-invitado-mensaje" rows="3" placeholder="Escribe tu mensaje aquí..." required class="w-full theme-input border text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none"></textarea>
           <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
             Enviar Mensaje
           </button>
@@ -129,17 +170,17 @@
       <div id="tab-pub-trivia" class="hidden space-y-4">
         
         <!-- INICIO TRIVIA -->
-        <div id="trivia-inicio" class="bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 text-center space-y-4">
-          <div class="w-12 h-12 bg-amber-400/10 text-amber-400 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto">
+        <div id="trivia-inicio" class="panel-card p-6 rounded-2xl text-center space-y-4">
+          <div class="w-12 h-12 bg-amber-400/10 text-amber-500 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto">
             <i class="fa-solid fa-trophy text-lg"></i>
           </div>
           <div class="space-y-1">
-            <h3 class="text-base font-bold text-white">Trivia del Evento</h3>
-            <p class="text-xs text-slate-400">Demuestra qué tanto conoces a los festejados respondiendo las preguntas.</p>
+            <h3 class="text-base font-bold">Trivia del Evento</h3>
+            <p class="text-xs theme-text-muted">Demuestra qué tanto conoces a los festejados respondiendo las preguntas.</p>
           </div>
 
           <div class="max-w-xs mx-auto space-y-3">
-            <input type="text" id="input-nombre-jugador" placeholder="Ingresa tu Nombre completo" class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs text-center px-3 py-2.5 rounded-xl focus:border-amber-400 outline-none font-bold">
+            <input type="text" id="input-nombre-jugador" placeholder="Ingresa tu Nombre completo" class="w-full theme-input border text-xs text-center px-3 py-2.5 rounded-xl focus:border-amber-400 outline-none font-bold">
             <button onclick="comenzarTrivia()" class="gold-button w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
               ¡Comenzar Trivia!
             </button>
@@ -147,27 +188,27 @@
         </div>
 
         <!-- PREGUNTA BOX -->
-        <div id="pregunta-box" class="hidden bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 space-y-4">
-          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <span id="trivia-progreso-txt" class="text-xs font-bold text-amber-400">Pregunta 1</span>
-            <span id="trivia-puntos-txt" class="text-xs font-bold text-emerald-400">0 pts</span>
+        <div id="pregunta-box" class="hidden panel-card p-6 rounded-2xl space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-700/30 pb-2">
+            <span id="trivia-progreso-txt" class="text-xs font-bold text-amber-500">Pregunta 1</span>
+            <span id="trivia-puntos-txt" class="text-xs font-bold text-emerald-500">0 pts</span>
           </div>
 
-          <h3 id="trivia-pregunta-titulo" class="text-sm font-bold text-white">¿Cargando pregunta?</h3>
+          <h3 id="trivia-pregunta-titulo" class="text-sm font-bold">¿Cargando pregunta?</h3>
 
           <div id="trivia-opciones-container" class="grid grid-cols-1 gap-2"></div>
         </div>
 
         <!-- TRIVIA RESULTADO -->
-        <div id="trivia-resultado" class="hidden bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 text-center space-y-4">
-          <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/30 flex items-center justify-center mx-auto">
+        <div id="trivia-resultado" class="hidden panel-card p-6 rounded-2xl text-center space-y-4">
+          <div class="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/30 flex items-center justify-center mx-auto">
             <i class="fa-solid fa-star text-lg"></i>
           </div>
-          <h3 class="text-base font-bold text-white">¡Trivia Finalizada!</h3>
-          <p id="trivia-puntaje-final" class="text-xs text-slate-300 font-bold"></p>
-          <p id="trivia-estado-guardado" class="text-xs font-bold text-amber-400"></p>
+          <h3 class="text-base font-bold">¡Trivia Finalizada!</h3>
+          <p id="trivia-puntaje-final" class="text-xs theme-text-muted font-bold"></p>
+          <p id="trivia-estado-guardado" class="text-xs font-bold text-amber-500"></p>
 
-          <button onclick="reiniciarTrivia()" class="border border-amber-400/50 text-amber-300 hover:bg-amber-400/10 px-6 py-2.5 rounded-xl font-bold text-xs transition">
+          <button onclick="reiniciarTrivia()" class="border border-amber-400/50 text-amber-500 hover:bg-amber-400/10 px-6 py-2.5 rounded-xl font-bold text-xs transition">
             Volver a Intentar
           </button>
         </div>
@@ -181,11 +222,11 @@
   <!-- MODAL WEBCAM PARA PC INVITADO -->
   <div id="modal-webcam-invitado" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
     <div class="panel-card max-w-lg w-full p-6 rounded-3xl text-center space-y-4 relative shadow-2xl border-amber-400/20">
-      <button onclick="cerrarWebcamPCInvitado()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl z-10"><i class="fa-solid fa-xmark"></i></button>
+      <button onclick="cerrarWebcamPCInvitado()" class="absolute top-4 right-4 theme-text-muted hover:text-amber-500 text-xl z-10"><i class="fa-solid fa-xmark"></i></button>
       
       <div>
-        <h3 class="text-base font-bold text-white">Captura desde tu Cámara</h3>
-        <p class="text-xs text-slate-400 mt-1">Asegúrate de permitir el acceso a la cámara en tu navegador.</p>
+        <h3 class="text-base font-bold">Captura desde tu Cámara</h3>
+        <p class="text-xs theme-text-muted mt-1">Asegúrate de permitir el acceso a la cámara en tu navegador.</p>
       </div>
 
       <div class="relative bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center border border-slate-800">
@@ -198,7 +239,7 @@
           <i class="fa-solid fa-circle-dot text-rose-600 text-sm"></i>
           <span>Tomar Foto</span>
         </button>
-        <button onclick="cerrarWebcamPCInvitado()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-xl font-bold text-xs transition">
+        <button onclick="cerrarWebcamPCInvitado()" class="border border-slate-700/60 theme-text-muted px-4 py-3 rounded-xl font-bold text-xs transition">
           Cancelar
         </button>
       </div>
@@ -232,8 +273,33 @@
     let limiteFotosEvento = 500;
 
     document.addEventListener('DOMContentLoaded', () => {
+      cargarPreferenciaTema();
       iniciarEvento();
     });
+
+    /* GESTIÓN DE TEMA CLARO / OSCURO */
+    function toggleTema() {
+      const isLight = document.body.classList.toggle('theme-light');
+      localStorage.setItem('zoe_theme', isLight ? 'light' : 'dark');
+      actualizarIconoTema(isLight);
+    }
+
+    function cargarPreferenciaTema() {
+      const savedTheme = localStorage.getItem('zoe_theme');
+      if (savedTheme === 'light') {
+        document.body.classList.add('theme-light');
+        actualizarIconoTema(true);
+      } else {
+        actualizarIconoTema(false);
+      }
+    }
+
+    function actualizarIconoTema(isLight) {
+      const icon = document.getElementById('theme-icon');
+      if (icon) {
+        icon.className = isLight ? "fa-solid fa-moon" : "fa-solid fa-sun";
+      }
+    }
 
     async function iniciarEvento() {
       const tituloEl = document.getElementById('titulo-evento-publico');
@@ -241,13 +307,13 @@
 
       if (!slug) {
         document.body.innerHTML = `
-          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
-            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
-              <div class="w-16 h-16 bg-amber-400/10 border border-amber-400/30 rounded-2xl flex items-center justify-center mx-auto text-amber-400 text-2xl">
+          <div class="min-h-screen flex items-center justify-center p-6 text-center">
+            <div class="panel-card p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-amber-400/10 border border-amber-400/30 rounded-2xl flex items-center justify-center mx-auto text-amber-500 text-2xl">
                 <i class="fa-solid fa-triangle-exclamation"></i>
               </div>
-              <h1 class="text-xl font-bold text-white">Evento no especificado</h1>
-              <p class="text-xs text-slate-400 leading-relaxed">
+              <h1 class="text-xl font-bold">Evento no especificado</h1>
+              <p class="text-xs theme-text-muted leading-relaxed">
                 No se indicó el parámetro de evento en el enlace. Escanea un código QR válido o ingresa desde tu panel de cliente.
               </p>
             </div>
@@ -264,13 +330,13 @@
 
       if (error || !evData) {
         document.body.innerHTML = `
-          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
-            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
-              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-2xl">
+          <div class="min-h-screen flex items-center justify-center p-6 text-center">
+            <div class="panel-card p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-500 text-2xl">
                 <i class="fa-solid fa-calendar-xmark"></i>
               </div>
-              <h1 class="text-xl font-bold text-white">Evento no encontrado</h1>
-              <p class="text-xs text-slate-400 leading-relaxed">
+              <h1 class="text-xl font-bold">Evento no encontrado</h1>
+              <p class="text-xs theme-text-muted leading-relaxed">
                 El evento especificado no existe o la URL es incorrecta.
               </p>
             </div>
@@ -282,14 +348,14 @@
       // VERIFICAR SI EL EVENTO ESTÁ INACTIVO
       if (evData.estado === 'inactivo') {
         document.body.innerHTML = `
-          <div class="min-h-screen bg-[#0b0e17] flex items-center justify-center p-6 text-center">
-            <div class="bg-[#0f1523] border border-amber-400/20 p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
-              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-400 text-2xl">
+          <div class="min-h-screen flex items-center justify-center p-6 text-center">
+            <div class="panel-card p-8 rounded-3xl max-w-md w-full space-y-4 shadow-2xl">
+              <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-center mx-auto text-rose-500 text-2xl">
                 <i class="fa-solid fa-calendar-xmark"></i>
               </div>
-              <h1 class="text-xl font-bold text-white">Evento Finalizado</h1>
-              <p class="text-xs text-slate-400 leading-relaxed">
-                La galería interactiva para <strong class="text-amber-300 capitalize">${slug.replace(/-/g, ' ')}</strong> ha concluido o se encuentra desactivada temporalmente.
+              <h1 class="text-xl font-bold">Evento Finalizado</h1>
+              <p class="text-xs theme-text-muted leading-relaxed">
+                La galería interactiva para <strong class="text-amber-500 capitalize">${slug.replace(/-/g, ' ')}</strong> ha concluido o se encuentra desactivada temporalmente.
               </p>
             </div>
           </div>
@@ -351,7 +417,7 @@
           .order('created_at', { ascending: false });
 
         if (error || !fotos || fotos.length === 0) {
-          grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Sé el primero en subir una foto a la galería.</div>`;
+          grid.innerHTML = `<div class="col-span-full py-12 text-center theme-text-muted text-xs">Sé el primero en subir una foto a la galería.</div>`;
           document.getElementById('cant-fotos-actual').innerText = '0';
           document.getElementById('barra-progreso-galeria').style.width = '0%';
           return;
@@ -364,7 +430,7 @@
         grid.innerHTML = fotos.map(f => {
           const likesActuales = f.likes || 0;
           return `
-            <div class="relative group aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md">
+            <div class="relative group aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-700/30 shadow-md">
               <img src="${f.url_foto}" loading="lazy" onclick="abrirLightbox('${f.url_foto}')" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300">
               <button id="btn-like-${f.id}" onclick="darLike(${f.id}, ${likesActuales})" class="absolute bottom-2 right-2 bg-slate-950/80 hover:bg-rose-600/80 text-rose-400 hover:text-white px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 backdrop-blur-md border border-slate-700 active:scale-90">
                 <i class="fa-solid fa-heart text-rose-500"></i> <span id="count-like-${f.id}">${likesActuales}</span>
@@ -524,10 +590,10 @@
 
       elEstado.classList.remove('hidden');
       if (error) {
-        elEstado.className = "text-xs text-center font-bold text-rose-400";
+        elEstado.className = "text-xs text-center font-bold text-rose-500";
         elEstado.innerText = "Error al enviar mensaje. Inténtalo nuevamente.";
       } else {
-        elEstado.className = "text-xs text-center font-bold text-emerald-400";
+        elEstado.className = "text-xs text-center font-bold text-emerald-500";
         elEstado.innerText = "¡Tu mensaje ha sido guardado exitosamente para los festejados!";
         event.target.reset();
       }
@@ -575,7 +641,7 @@
 
       const container = document.getElementById('trivia-opciones-container');
       container.innerHTML = opciones.map(o => `
-        <button onclick="responderTrivia('${o.key}')" class="bg-[#0f1523] border border-slate-700 hover:border-amber-400/80 text-slate-200 hover:text-amber-300 p-3 rounded-xl font-bold text-xs text-left transition">
+        <button onclick="responderTrivia('${o.key}')" class="panel-card hover:border-amber-400 p-3 rounded-xl font-bold text-xs text-left transition">
           ${o.key}) ${o.txt}
         </button>
       `).join('');
@@ -629,14 +695,14 @@
       ['galeria', 'visitas', 'trivia'].forEach(t => {
         document.getElementById(`tab-pub-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-btn-pub-${t}`);
-        btn.classList.remove('text-amber-400', 'border-b-2', 'border-amber-400');
-        btn.classList.add('text-slate-400');
+        btn.classList.remove('text-amber-500', 'border-b-2', 'border-amber-400');
+        btn.classList.add('theme-text-muted');
       });
 
       document.getElementById(`tab-pub-${tab}`).classList.remove('hidden');
       const btnActivo = document.getElementById(`tab-btn-pub-${tab}`);
-      btnActivo.classList.add('text-amber-400', 'border-b-2', 'border-amber-400');
-      btnActivo.classList.remove('text-slate-400');
+      btnActivo.classList.add('text-amber-500', 'border-b-2', 'border-amber-400');
+      btnActivo.classList.remove('theme-text-muted');
     }
 
     function abrirLightbox(url) {
