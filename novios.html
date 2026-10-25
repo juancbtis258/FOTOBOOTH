@@ -90,7 +90,7 @@
     
     <!-- MÉTRICAS Y HERRAMIENTA QR -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+      <div id="card-stat-fotos" class="panel-card p-4 rounded-2xl flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-lg">
           <i class="fa-solid fa-camera"></i>
         </div>
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+      <div id="card-stat-likes" class="panel-card p-4 rounded-2xl flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg">
           <i class="fa-solid fa-heart"></i>
         </div>
@@ -110,7 +110,7 @@
         </div>
       </div>
 
-      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+      <div id="card-stat-mensajes" class="panel-card p-4 rounded-2xl flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg">
           <i class="fa-solid fa-envelope-open-text"></i>
         </div>
@@ -382,16 +382,64 @@
       }
     });
 
-    function mostrarPanel() {
+    async function mostrarPanel() {
       document.getElementById('seccion-login').classList.add('hidden');
       document.getElementById('seccion-panel').classList.remove('hidden');
       document.getElementById('btn-cerrar-sesion').classList.remove('hidden');
       
+      await aplicarConfiguracionModulos();
+
       configurarDragAndDrop();
       cargarFotosNovios();
       cargarMensajes();
       cargarPreguntas();
       cargarPuntajes();
+    }
+
+    async function aplicarConfiguracionModulos() {
+      if (!slugActual) return;
+
+      const { data: evData } = await _supabase
+        .from('eventos')
+        .select('*')
+        .eq('slug', slugActual)
+        .maybeSingle();
+
+      if (evData) {
+        const incGaleria = evData.inc_galeria !== false;
+        const incLibro = evData.inc_libro !== false;
+        const incTrivia = evData.inc_trivia !== false;
+
+        // Ocultar / Mostrar Pestañas principales
+        const btnFotos = document.getElementById('tab-btn-fotos');
+        const btnMensajes = document.getElementById('tab-btn-mensajes');
+        const btnJuego = document.getElementById('tab-btn-juego');
+
+        if (btnFotos) btnFotos.style.display = incGaleria ? '' : 'none';
+        if (btnMensajes) btnMensajes.style.display = incLibro ? '' : 'none';
+        if (btnJuego) btnJuego.style.display = incTrivia ? '' : 'none';
+
+        // Ocultar / Mostrar Zona de carga y métricas de fotos
+        const dropZone = document.getElementById('drop-zone');
+        const cardFotos = document.getElementById('card-stat-fotos');
+        const cardLikes = document.getElementById('card-stat-likes');
+        if (dropZone) dropZone.style.display = incGaleria ? '' : 'none';
+        if (cardFotos) cardFotos.style.display = incGaleria ? '' : 'none';
+        if (cardLikes) cardLikes.style.display = incGaleria ? '' : 'none';
+
+        // Ocultar / Mostrar Métricas de mensajes
+        const cardMensajes = document.getElementById('card-stat-mensajes');
+        if (cardMensajes) cardMensajes.style.display = incLibro ? '' : 'none';
+
+        // Cambiar dinámicamente a la primera pestaña activa
+        if (!incGaleria && incLibro) {
+          cambiarTab('mensajes');
+        } else if (!incGaleria && !incLibro && incTrivia) {
+          cambiarTab('juego');
+        } else if (incGaleria) {
+          cambiarTab('fotos');
+        }
+      }
     }
 
     function comprimirImagen(archivo, calidad = 0.7, maxAncho = 1200) {
@@ -879,16 +927,24 @@
 
     function cambiarTab(nombreTab) {
       ['fotos', 'mensajes', 'juego'].forEach(t => {
-        document.getElementById(`tab-contenido-${t}`).classList.add('hidden');
+        const elContent = document.getElementById(`tab-contenido-${t}`);
+        if (elContent) elContent.classList.add('hidden');
+        
         const btn = document.getElementById(`tab-btn-${t}`);
-        btn.classList.remove('text-amber-400', 'border-b-2', 'border-amber-400');
-        btn.classList.add('text-slate-400');
+        if (btn) {
+          btn.classList.remove('text-amber-400', 'border-b-2', 'border-amber-400');
+          btn.classList.add('text-slate-400');
+        }
       });
 
-      document.getElementById(`tab-contenido-${nombreTab}`).classList.remove('hidden');
+      const elActivo = document.getElementById(`tab-contenido-${nombreTab}`);
+      if (elActivo) elActivo.classList.remove('hidden');
+
       const btnActivo = document.getElementById(`tab-btn-${nombreTab}`);
-      btnActivo.classList.add('text-amber-400', 'border-b-2', 'border-amber-400');
-      btnActivo.classList.remove('text-slate-400');
+      if (btnActivo) {
+        btnActivo.classList.add('text-amber-400', 'border-b-2', 'border-amber-400');
+        btnActivo.classList.remove('text-slate-400');
+      }
 
       if (nombreTab === 'juego') cargarPuntajes();
       if (nombreTab === 'fotos') cargarFotosNovios();
