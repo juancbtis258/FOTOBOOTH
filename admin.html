@@ -15,15 +15,24 @@
     .gold-button { background: linear-gradient(135deg, #f3c262, #e0aa3e); color: #0d111d; }
     .gold-button:hover { filter: brightness(1.1); }
     .tab-active { border-b-2 border-amber-400 text-amber-400 font-bold; }
+    
+    /* Corrección de fondo para autofill del navegador */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #f3c262 !important;
+      -webkit-box-shadow: 0 0 0px 1000px #0b0e17 inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 select-none">
 
-  <!-- 1. LOGIN -->
-  <div id="seccion-login" class="min-h-[80vh] flex items-center justify-center">
+  <!-- 1. LOGIN REDISEÑADO -->
+  <div id="seccion-login" class="min-h-[85vh] flex items-center justify-center">
     <div class="panel-card p-8 rounded-3xl shadow-2xl max-w-sm w-full space-y-6 border border-amber-400/20">
       <div class="text-center space-y-2">
-        <div class="w-16 h-16 bg-amber-400/10 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto">
+        <div class="w-16 h-16 bg-amber-400/10 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto shadow-inner">
           <i class="fa-solid fa-shield-halved text-amber-400 text-2xl"></i>
         </div>
         <h1 class="text-xl font-black text-white">Portal Zoe Creaciones</h1>
@@ -35,33 +44,47 @@
         <button id="tab-admin" type="button" onclick="cambiarTab('admin')" class="flex-1 py-2 text-center text-slate-500 transition">Admin Maestro</button>
       </div>
 
+      <!-- FORMULARIO COLABORADOR -->
       <form id="form-login-colab" onsubmit="loginColaborador(event)" class="space-y-4">
         <div>
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Usuario</label>
-          <input type="text" id="login-user" required placeholder="ej: juan" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none text-sm">
+          <input type="text" id="login-user" required placeholder="ej: carlos" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none focus:border-amber-400 text-xs">
         </div>
         <div>
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Contraseña</label>
-          <input type="password" id="login-pass" required placeholder="••••••••" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none text-sm">
+          <div class="relative">
+            <input type="password" id="login-pass" required placeholder="••••••••" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none focus:border-amber-400 text-xs pr-10">
+            <button type="button" onclick="togglePassword('login-pass', 'eye-colab')" class="absolute right-3 top-3 text-slate-500 hover:text-amber-400 text-xs">
+              <i id="eye-colab" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="gold-button w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">Ingresar al Panel</button>
       </form>
 
+      <!-- FORMULARIO ADMIN MAESTRO -->
       <form id="form-login-admin" onsubmit="loginAdmin(event)" class="space-y-4 hidden">
         <div>
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 text-center">PIN Maestro</label>
-          <input type="password" id="login-pin" required placeholder="9999" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-mono font-bold text-center text-xl px-4 py-3 rounded-xl outline-none tracking-widest">
+          <div class="relative">
+            <input type="password" id="login-pin" required placeholder="9999" maxlength="6" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-mono font-bold text-center text-lg px-4 py-3 rounded-xl outline-none focus:border-amber-400 tracking-widest">
+            <button type="button" onclick="togglePassword('login-pin', 'eye-admin')" class="absolute right-3 top-3.5 text-slate-500 hover:text-amber-400 text-xs">
+              <i id="eye-admin" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="gold-button w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">Desbloquear Maestro</button>
       </form>
     </div>
   </div>
 
-  <!-- 2. PANEL DE CONTROL -->
+  <!-- 2. PANEL PRINCIPAL DE CONTROL -->
   <main id="seccion-panel" class="max-w-6xl mx-auto space-y-6 hidden">
+    
+    <!-- ENCABEZADO -->
     <div class="panel-card p-6 rounded-3xl shadow-2xl flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <div class="bg-white p-2 rounded-2xl shadow-md">
+        <div class="bg-white p-2 rounded-2xl shadow-md border border-amber-400/20">
           <img src="logotipozoecreaciones.jfif" onerror="this.style.display='none'" class="w-10 h-10 rounded-xl object-cover">
         </div>
         <div>
@@ -72,12 +95,12 @@
           <h1 class="text-xl font-black text-white">Gestión de Eventos Zoe</h1>
         </div>
       </div>
-      <button type="button" onclick="cerrarSesion()" class="text-rose-400 text-xs font-bold flex items-center gap-1.5 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 transition">
+      <button type="button" onclick="cerrarSesion()" class="text-rose-400 text-xs font-bold flex items-center gap-1.5 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 transition hover:bg-rose-500/20">
         <i class="fa-solid fa-right-from-bracket"></i> Salir
       </button>
     </div>
 
-    <!-- METRICAS -->
+    <!-- METRICAS DE EVENTOS -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="panel-card p-4 rounded-2xl border-l-4 border-amber-400 flex items-center justify-between">
         <div>
@@ -109,111 +132,133 @@
       </div>
     </div>
 
-    <!-- REGISTRAR COLABORADORES (ADMIN) -->
-    <div id="modulo-colaboradores" class="grid grid-cols-1 md:grid-cols-12 gap-6 hidden">
-      <div class="md:col-span-5 panel-card p-6 rounded-3xl shadow-2xl space-y-4 border-l-4 border-amber-400">
-        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-user-plus mr-1"></i> Registrar Nuevo Colaborador</h2>
-        <form onsubmit="crearUsuario(event)" class="space-y-3">
-          <div>
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Usuario:</label>
-            <input type="text" id="nuevo-user" required placeholder="ej: carlos" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3.5 py-2 rounded-xl outline-none text-xs">
+    <!-- FORMULARIO DE REGISTRO DE EVENTO (DESPLEGABLE / ACCORDION) -->
+    <details class="panel-card rounded-3xl shadow-2xl group overflow-hidden border border-amber-400/20">
+      <summary class="p-5 font-black text-xs text-amber-400 uppercase tracking-widest cursor-pointer flex items-center justify-between hover:bg-slate-900/50 transition">
+        <span><i class="fa-solid fa-calendar-plus mr-2 text-base"></i> Registrar Nuevo Evento Completo</span>
+        <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+      </summary>
+      
+      <div class="p-6 pt-2 border-t border-slate-800/80">
+        <form onsubmit="guardarEvento(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Tipo de Evento:</label>
+            <select id="input-tipo" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+              <option value="boda">💍 Boda</option>
+              <option value="xv">👑 XV Años</option>
+              <option value="graduacion">🎓 Graduación</option>
+              <option value="cumple">🎂 Cumpleaños</option>
+              <option value="corporativo">🏢 Corporativo / Otro</option>
+            </select>
           </div>
-          <div>
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Contraseña:</label>
-            <input type="text" id="nueva-pass" required placeholder="ej: 123456" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3.5 py-2 rounded-xl outline-none text-xs">
+
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Nombre del Evento:</label>
+            <input type="text" id="input-nombre" oninput="generarSlugAutomatico(this.value)" placeholder="ej: Mariana & Pedro" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
           </div>
-          <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider">Guardar Colaborador</button>
+
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Slug (URL limpia):</label>
+            <input type="text" id="input-slug" readonly placeholder="mariana-y-pedro" required class="w-full bg-slate-900 border border-slate-800 text-slate-400 font-mono font-bold px-3 py-3 rounded-xl outline-none text-xs">
+          </div>
+
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Fecha Evento:</label>
+            <input type="date" id="input-fecha" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+          </div>
+
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">PIN Clientes:</label>
+            <input type="text" id="input-pin" maxlength="6" placeholder="1234" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs tracking-widest">
+          </div>
+
+          <div class="md:col-span-3 space-y-1">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Límite Fotos:</label>
+            <input type="number" id="input-limite" value="500" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+          </div>
+
+          <!-- MÓDULOS ACTIVOS EN LA VISTA DEL INVITADO -->
+          <div class="md:col-span-12 p-3 bg-[#0b0e17] border border-slate-800 rounded-xl space-y-2 mt-2">
+            <label class="text-[10px] font-black text-amber-400 uppercase tracking-wider block">
+              <i class="fa-solid fa-list-check mr-1"></i> Módulos visibles para Invitados (index.html):
+            </label>
+            <div class="flex flex-wrap gap-6 text-xs">
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" id="inc-galeria-fotos" checked class="accent-amber-400 w-4 h-4 rounded"> Galería en Vivo
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" id="inc-libro-visitas" checked class="accent-amber-400 w-4 h-4 rounded"> Libro de Visitas (Privado)
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" id="inc-trivia-novios" checked class="accent-amber-400 w-4 h-4 rounded"> Trivia "¿Quién conoce más?"
+              </label>
+            </div>
+          </div>
+
+          <div class="md:col-span-12 flex items-center justify-between pt-4 border-t border-slate-800/60 mt-2">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="check-auto-close" checked class="w-4 h-4 accent-amber-400 rounded">
+              <label for="check-auto-close" class="text-xs text-slate-300 font-medium">
+                Auto-desactivar evento <input type="number" id="dias-vencimiento" value="7" class="w-12 bg-[#0b0e17] border border-slate-700 text-center font-bold text-amber-300 rounded px-1 py-0.5 mx-1 text-xs"> días después.
+              </label>
+            </div>
+            <button type="submit" class="gold-button px-8 py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2">
+              <i class="fa-solid fa-plus text-sm"></i> Guardar Evento
+            </button>
+          </div>
         </form>
       </div>
+    </details>
 
-      <div class="md:col-span-7 panel-card p-6 rounded-3xl shadow-2xl space-y-4">
-        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-users mr-1"></i> Colaboradores Activos</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 text-[10px] font-black text-slate-400 uppercase">
-                <th class="pb-2 px-2">Usuario</th>
-                <th class="pb-2 px-2">Clave</th>
-                <th class="pb-2 px-2 text-right">Opciones</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-usuarios" class="divide-y divide-slate-800/60 font-medium"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <!-- REGISTRAR COLABORADORES (SOLO ADMIN MAESTRO - DESPLEGABLE) -->
+    <div id="modulo-colaboradores" class="hidden">
+      <details class="panel-card rounded-3xl shadow-2xl group overflow-hidden border border-purple-500/20">
+        <summary class="p-5 font-black text-xs text-purple-400 uppercase tracking-widest cursor-pointer flex items-center justify-between hover:bg-slate-900/50 transition">
+          <span><i class="fa-solid fa-users-gear mr-2 text-base"></i> Gestión de Colaboradores</span>
+          <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+        </summary>
+        
+        <div class="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 border-t border-slate-800/80">
+          <div class="md:col-span-5 bg-[#0b0e17] p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h3 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-user-plus mr-1"></i> Registrar Colaborador</h3>
+            <form onsubmit="crearUsuario(event)" class="space-y-3">
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Usuario:</label>
+                <input type="text" id="nuevo-user" required placeholder="ej: carlos" class="w-full bg-[#0f1523] border border-slate-800 text-amber-300 font-bold px-3 py-2 rounded-xl outline-none text-xs">
+              </div>
+              <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Contraseña:</label>
+                <input type="text" id="nueva-pass" required placeholder="ej: 123456" class="w-full bg-[#0f1523] border border-slate-800 text-amber-300 font-bold px-3 py-2 rounded-xl outline-none text-xs">
+              </div>
+              <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider">Guardar Colaborador</button>
+            </form>
+          </div>
 
-    <!-- REGISTRAR EVENTO -->
-    <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
-      <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-calendar-plus mr-1"></i> Registrar Evento Completo</h2>
-      <form onsubmit="guardarEvento(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-        <div class="md:col-span-3 space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Tipo de Evento:</label>
-          <select id="input-tipo" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
-            <option value="boda">💍 Boda</option>
-            <option value="xv">👑 XV Años</option>
-            <option value="graduacion">🎓 Graduación</option>
-            <option value="cumple">🎂 Cumpleaños</option>
-            <option value="corporativo">🏢 Corporativo / Otro</option>
-          </select>
-        </div>
-
-        <div class="md:col-span-3 space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Nombre del Evento / Slug:</label>
-          <input type="text" id="input-slug" placeholder="ej: mariana-y-pedro" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
-        </div>
-
-        <div class="md:col-span-2 space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Fecha Evento:</label>
-          <input type="date" id="input-fecha" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
-        </div>
-
-        <div class="md:col-span-2 space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">PIN Clientes:</label>
-          <input type="text" id="input-pin" maxlength="6" placeholder="1234" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs tracking-widest">
-        </div>
-
-        <div class="md:col-span-2 space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Límite Fotos:</label>
-          <input type="number" id="input-limite" value="500" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
-        </div>
-
-        <!-- MÓDULOS ACTIVOS EN LA VISTA DEL INVITADO -->
-        <div class="md:col-span-12 p-3 bg-[#0b0e17] border border-slate-800 rounded-xl space-y-2">
-          <label class="text-[10px] font-black text-amber-400 uppercase tracking-wider block">
-            <i class="fa-solid fa-list-check mr-1"></i> Módulos visibles para Invitados (index.html):
-          </label>
-          <div class="flex flex-wrap gap-4 text-xs">
-            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
-              <input type="checkbox" id="inc-galeria-fotos" checked class="accent-amber-400"> Galería en Vivo
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
-              <input type="checkbox" id="inc-libro-visitas" checked class="accent-amber-400"> Libro de Visitas (Privado)
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
-              <input type="checkbox" id="inc-trivia-novios" checked class="accent-amber-400"> Trivia "¿Quién conoce más?"
-            </label>
+          <div class="md:col-span-7 bg-[#0b0e17] p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h3 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-users mr-1"></i> Lista de Colaboradores</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[10px] font-black text-slate-400 uppercase">
+                    <th class="pb-2 px-2">Usuario</th>
+                    <th class="pb-2 px-2">Clave</th>
+                    <th class="pb-2 px-2 text-right">Opciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-usuarios" class="divide-y divide-slate-800/60 font-medium"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-
-        <div class="md:col-span-12 flex items-center justify-between pt-2 border-t border-slate-800/60">
-          <div class="flex items-center gap-2">
-            <input type="checkbox" id="check-auto-close" checked class="w-4 h-4 accent-amber-400 rounded">
-            <label for="check-auto-close" class="text-xs text-slate-300 font-medium">
-              Auto-desactivar evento <input type="number" id="dias-vencimiento" value="7" class="w-12 bg-[#0b0e17] border border-slate-700 text-center font-bold text-amber-300 rounded px-1 py-0.5 mx-1 text-xs"> días después.
-            </label>
-          </div>
-          <button type="submit" class="gold-button px-8 py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition">
-            <i class="fa-solid fa-plus mr-1"></i> Guardar Evento
-          </button>
-        </div>
-      </form>
+      </details>
     </div>
 
-    <!-- TABLA DE EVENTOS -->
+    <!-- TABLA PRINCIPAL DE EVENTOS -->
     <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-list mr-1"></i> Control General de Eventos</h2>
+        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-base"></i> Control General de Eventos
+        </h2>
         <div class="flex flex-wrap items-center gap-2">
           <div class="relative">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
@@ -234,8 +279,8 @@
               <th class="pb-3 px-2">Fecha / Vigencia</th>
               <th class="pb-3 px-2">Creado Por</th>
               <th class="pb-3 px-2">PIN</th>
-              <th class="pb-3 px-2">Límite</th>
-              <th class="pb-3 px-2">Enlaces & Herramientas</th>
+              <th class="pb-3 px-2">Fotos Subidas</th>
+              <th class="pb-3 px-2">Herramientas</th>
               <th class="pb-3 px-2 text-right">Acciones</th>
             </tr>
           </thead>
@@ -245,7 +290,7 @@
     </div>
   </main>
 
-  <!-- MODAL EDITAR MÓDULOS DEL EVENTO -->
+  <!-- MODAL EDITAR MÓDULOS -->
   <div id="modal-modulos" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
     <div class="panel-card p-6 rounded-3xl border border-amber-400/30 max-w-sm w-full space-y-4 relative">
       <button onclick="cerrarModalModulos()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -254,15 +299,15 @@
       
       <div class="space-y-3 pt-2 text-xs">
         <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
-          <input type="checkbox" id="edit-mod-galeria" class="accent-amber-400">
+          <input type="checkbox" id="edit-mod-galeria" class="accent-amber-400 w-4 h-4 rounded">
           <span><i class="fa-solid fa-images text-amber-400 mr-1"></i> Galería en Vivo</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
-          <input type="checkbox" id="edit-mod-libro" class="accent-amber-400">
+          <input type="checkbox" id="edit-mod-libro" class="accent-amber-400 w-4 h-4 rounded">
           <span><i class="fa-solid fa-envelope text-amber-400 mr-1"></i> Libro de Visitas (Privado)</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
-          <input type="checkbox" id="edit-mod-trivia" class="accent-amber-400">
+          <input type="checkbox" id="edit-mod-trivia" class="accent-amber-400 w-4 h-4 rounded">
           <span><i class="fa-solid fa-gamepad text-amber-400 mr-1"></i> Trivia "¿Quién conoce más?"</span>
         </label>
       </div>
@@ -280,7 +325,7 @@
       <h3 id="qr-titulo" class="text-sm font-black text-amber-400 capitalize">Código QR del Evento</h3>
       <div id="qr-container" class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-inner"></div>
       <p class="text-[10px] text-slate-400">Escanea para acceder a la galería del invitado.</p>
-      <button id="btn-descargar-qr" onclick="descargarQR()" class="gold-button w-full py-2 rounded-xl text-xs font-black uppercase"><i class="fa-solid fa-download mr-1"></i> Descargar QR</button>
+      <button id="btn-descargar-qr" onclick="descargarQR()" class="gold-button w-full py-2.5 rounded-xl text-xs font-black uppercase"><i class="fa-solid fa-download mr-1"></i> Descargar QR</button>
     </div>
   </div>
 
@@ -293,6 +338,7 @@
     let esAdmin = false;
     let usuarioActual = "";
     let todosLosEventos = [];
+    let conteoFotosMap = {};
     let filtroEstadoActual = 'todos';
     let slugEventoEnEdicion = "";
 
@@ -313,6 +359,20 @@
       }
     });
 
+    function togglePassword(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
     function cambiarTab(tipo) {
       if (tipo === 'colab') {
         document.getElementById('tab-colab').className = "flex-1 py-2 text-center tab-active transition";
@@ -325,6 +385,17 @@
         document.getElementById('form-login-admin').classList.remove('hidden');
         document.getElementById('form-login-colab').classList.add('hidden');
       }
+    }
+
+    function generarSlugAutomatico(texto) {
+      const slug = texto.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quita acentos
+        .replace(/&/g, 'y')
+        .replace(/[^a-z0-9 -]/g, '') // Quita símbolos raros
+        .trim()
+        .replace(/\s+/g, '-');
+      
+      document.getElementById('input-slug').value = slug;
     }
 
     async function loginColaborador(e) {
@@ -394,7 +465,7 @@
       const { error } = await _supabase.from('usuarios_colaboradores').insert([{ usuario: user, password: pass }]);
       if (error) alert("Error al registrar: " + error.message);
       else {
-        alert("Colaborador registrado");
+        alert("Colaborador registrado exitosamente");
         document.getElementById('nuevo-user').value = '';
         document.getElementById('nueva-pass').value = '';
         cargarUsuarios();
@@ -423,7 +494,7 @@
     }
 
     async function eliminarUsuario(id) {
-      if (!confirm("¿Eliminar usuario?")) return;
+      if (!confirm("¿Deseas eliminar este usuario?")) return;
       await _supabase.from('usuarios_colaboradores').delete().eq('id', id);
       cargarUsuarios();
     }
@@ -431,11 +502,11 @@
     async function guardarEvento(e) {
       e.preventDefault();
       const tipo = document.getElementById('input-tipo').value;
-      const input = document.getElementById('input-slug').value.trim();
+      const nombre = document.getElementById('input-nombre').value.trim();
+      const slug = document.getElementById('input-slug').value.trim();
       const pin = document.getElementById('input-pin').value.trim();
       const fecha = document.getElementById('input-fecha').value;
       const limite = document.getElementById('input-limite').value || 500;
-      const slug = input.toLowerCase().replace(/\s+/g, '-');
 
       const autoClose = document.getElementById('check-auto-close').checked;
       const diasVencimiento = parseInt(document.getElementById('dias-vencimiento').value) || 7;
@@ -446,7 +517,7 @@
 
       const nuevoObjeto = {
         slug: slug,
-        nombre_evento: input.replace(/-/g, ' '),
+        nombre_evento: nombre,
         pin_novios: pin,
         fecha_evento: fecha,
         limite_fotos: parseInt(limite),
@@ -466,6 +537,7 @@
         alert("Error al guardar evento: " + error.message);
       } else {
         alert("¡Evento registrado con éxito!");
+        document.getElementById('input-nombre').value = '';
         document.getElementById('input-slug').value = '';
         document.getElementById('input-pin').value = '';
         cargarEventos();
@@ -476,9 +548,20 @@
       const { data: eventos } = await _supabase.from('eventos').select('*').order('created_at', { ascending: false });
       todosLosEventos = eventos || [];
       
+      await obtenerConteoFotos();
       await evaluarEventosVencidos();
       actualizarMetricas();
       renderizarTabla();
+    }
+
+    async function obtenerConteoFotos() {
+      conteoFotosMap = {};
+      const { data: fotos } = await _supabase.from('fotos').select('evento_id');
+      if (fotos) {
+        fotos.forEach(f => {
+          conteoFotosMap[f.evento_id] = (conteoFotosMap[f.evento_id] || 0) + 1;
+        });
+      }
     }
 
     async function evaluarEventosVencidos() {
@@ -547,10 +630,11 @@
           : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" title="Clic para Reactivar" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold transition">INACTIVO</button>`;
 
         const botonEliminar = esAdmin
-          ? `<button type="button" onclick="eliminarEvento('${ev.slug}')" class="text-rose-400 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
+          ? `<button type="button" onclick="eliminarEvento('${ev.slug}')" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
           : `<span class="text-slate-600 text-[10px] italic"><i class="fa-solid fa-lock mr-1"></i>Protegido</span>`;
 
         const limiteVal = ev.limite_fotos || 500;
+        const fotosSubidas = conteoFotosMap[ev.slug] || 0;
         let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
         let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : 7;
 
@@ -570,19 +654,36 @@
             </td>
             <td class="py-4 px-2 text-slate-300 font-mono text-[11px] font-bold">${ev.creado_por || 'Sistema'}</td>
             <td class="py-4 px-2"><span class="font-mono text-slate-300 font-bold">${ev.pin_novios || '----'}</span> <button onclick="editarPin('${ev.slug}', '${ev.pin_novios}')" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
-            <td class="py-4 px-2"><span class="font-mono text-slate-400 text-[11px] font-bold">${limiteVal} fotos</span> <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
-            <td class="py-4 px-2 flex gap-1.5 flex-wrap">
-              <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2 py-1 rounded border border-amber-400/30 font-bold flex items-center gap-1"><i class="fa-solid fa-list-check"></i> Módulos</button>
-              <button type="button" onclick="copiar('${urlGaleria}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Galería</button>
-              <button type="button" onclick="copiar('${urlNovios}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Clientes</button>
-              <button type="button" onclick="copiar('${urlPantalla}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Pantalla</button>
-              <button type="button" onclick="mostrarQR('${ev.slug}', '${urlGaleria}')" class="bg-purple-600/20 text-purple-300 border border-purple-500/30 text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1"><i class="fa-solid fa-qrcode"></i> QR</button>
-              <a href="${linkWhatsApp}" target="_blank" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1"><i class="fa-brands fa-whatsapp"></i> Enviar</a>
+            <td class="py-4 px-2">
+              <div class="font-mono text-amber-300 text-[11px] font-bold">${fotosSubidas} / ${limiteVal} <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></div>
+              <div class="w-20 bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                <div class="bg-amber-400 h-1 rounded-full" style="width: ${Math.min(100, Math.round((fotosSubidas/limiteVal)*100))}%"></div>
+              </div>
+            </td>
+            <td class="py-4 px-2 flex gap-1.5 flex-wrap items-center">
+              <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2.5 py-1 rounded-lg border border-amber-400/30 font-bold flex items-center gap-1 hover:bg-amber-400/20 transition"><i class="fa-solid fa-list-check"></i> Módulos</button>
+              
+              <select onchange="copiarAccesoRapido(this)" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded-lg border border-slate-700 font-bold outline-none cursor-pointer">
+                <option value="" selected disabled>Copiar Acceso ▾</option>
+                <option value="${urlGaleria}">📸 Galería Invitado</option>
+                <option value="${urlNovios}">💍 Panel Cliente</option>
+                <option value="${urlPantalla}">📺 Pantalla en Vivo</option>
+              </select>
+
+              <button type="button" onclick="mostrarQR('${ev.slug}', '${urlGaleria}')" class="bg-purple-600/20 text-purple-300 border border-purple-500/30 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 hover:bg-purple-600/30 transition"><i class="fa-solid fa-qrcode"></i> QR</button>
+              <a href="${linkWhatsApp}" target="_blank" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 hover:bg-emerald-600/30 transition"><i class="fa-brands fa-whatsapp"></i> Enviar</a>
             </td>
             <td class="py-4 px-2 text-right">${botonEliminar}</td>
           </tr>
         `;
       }).join('');
+    }
+
+    function copiarAccesoRapido(selectEl) {
+      if (selectEl.value) {
+        copiar(selectEl.value);
+        selectEl.selectedIndex = 0;
+      }
     }
 
     function filtrarEventos() { renderizarTabla(); }
@@ -679,7 +780,7 @@
     }
 
     async function eliminarEvento(slug) {
-      if (confirm(`¿Eliminar evento ${slug}?`)) {
+      if (confirm(`¿Deseas eliminar permanentemente el evento ${slug}?`)) {
         await _supabase.from('eventos').delete().eq('slug', slug);
         cargarEventos();
       }
