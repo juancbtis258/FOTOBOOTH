@@ -394,6 +394,37 @@
       cargarPuntajes();
     }
 
+    function comprimirImagen(archivo, calidad = 0.7, maxAncho = 1200) {
+      return new Promise((resolve) => {
+        if (!archivo.type.startsWith('image/')) { resolve(archivo); return; }
+        const reader = new FileReader();
+        reader.readAsDataURL(archivo);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let ancho = img.width;
+            let alto = img.height;
+            if (ancho > maxAncho) {
+              alto = Math.round((alto * maxAncho) / ancho);
+              ancho = maxAncho;
+            }
+            canvas.width = ancho;
+            canvas.height = alto;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, ancho, alto);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(new File([blob], archivo.name, { type: 'image/jpeg' }));
+              else resolve(archivo);
+            }, 'image/jpeg', calidad);
+          };
+          img.onerror = () => resolve(archivo);
+        };
+        reader.onerror = () => resolve(archivo);
+      });
+    }
+
     function configurarDragAndDrop() {
       const dropZone = document.getElementById('drop-zone');
       if (!dropZone) return;
@@ -440,7 +471,6 @@
       }
     }
 
-    /* GESTIÓN DE CÁMARA */
     function activarCamaraDispositivo() {
       const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (esMovil) {
@@ -499,7 +529,6 @@
       event.target.value = '';
     }
 
-    /* PROCESAMIENTO ROBUSTO POR LOTES */
     async function procesarSubidaArchivos(archivos) {
       if (!archivos || archivos.length === 0 || !slugActual) return;
 
@@ -522,13 +551,14 @@
             textoProgreso.innerText = `Subiendo foto ${numActual} de ${totalArchivos} (${porcentaje}%)...`;
           }
 
-          const ext = archivo.name.split('.').pop() || 'jpg';
+          const archivoOptimizado = await comprimirImagen(archivo);
+          const ext = archivoOptimizado.name.split('.').pop() || 'jpg';
           const ruta = `${slugActual}/novios_${Date.now()}_${numActual}.${ext}`;
 
           try {
             const { error: uploadError } = await _supabase.storage
               .from('fotos-eventos')
-              .upload(ruta, archivo, { upsert: true });
+              .upload(ruta, archivoOptimizado, { upsert: true });
 
             if (uploadError) return false;
 
@@ -560,7 +590,6 @@
       }
     }
 
-    /* CARGAR FOTOS Y REACCIONES DE LIKES EN PANEL */
     async function cargarFotosNovios() {
       if (!slugActual) return;
 
@@ -578,7 +607,6 @@
       listaFotosGlobal = fotos || [];
       const totalFotos = listaFotosGlobal.length;
 
-      // Suma segura de likes
       let totalLikes = listaFotosGlobal.reduce((acc, f) => {
         return acc + (parseInt(f.likes) || 0);
       }, 0);
@@ -711,7 +739,6 @@
       }
     }
 
-    /* GESTIÓN DE MENSAJES */
     async function cargarMensajes() {
       if (!slugActual) return;
 
@@ -748,48 +775,22 @@
       cargarMensajes();
     }
 
-    /* PARTICIPANTES / PUNTAJES */
     async function cargarPuntajes() {
       if (!slugActual) return;
 
       const contenedor = document.getElementById('lista-puntajes');
-      let listaJugadores = [];
-
       let { data: resJugadores } = await _supabase
         .from('jugadores')
         .select('*')
-        .or(`evento_id.eq.${slugActual},evento_id.eq.${slugActual.replace(/-/g, ' ')}`);
+        .eq('evento_id', slugActual)
+        .order('puntos', { ascending: false });
 
       if (!resJugadores || resJugadores.length === 0) {
-        let { data: resTodos } = await _supabase.from('jugadores').select('*');
-        resJugadores = resTodos || [];
-      }
-
-      if (resJugadores && resJugadores.length > 0) {
-        listaJugadores = resJugadores.map(j => ({
-          id: j.id,
-          nombre: j.nombre || j.jugador || j.usuario || 'Jugador Anónimo',
-          puntos: j.puntos !== undefined ? j.puntos : (j.puntaje !== undefined ? j.puntaje : 0)
-        }));
-      } else {
-        let { data: resPuntuaciones } = await _supabase.from('puntuaciones').select('*');
-        if (resPuntuaciones && resPuntuaciones.length > 0) {
-          listaJugadores = resPuntuaciones.map(j => ({
-            id: j.id,
-            nombre: j.nombre || j.jugador || 'Jugador Anónimo',
-            puntos: j.puntaje !== undefined ? j.puntaje : (j.puntos || 0)
-          }));
-        }
-      }
-
-      listaJugadores.sort((a, b) => b.puntos - a.puntos);
-
-      if (listaJugadores.length === 0) {
         contenedor.innerHTML = `<div class="text-center text-slate-500 text-xs py-4">Aún no se ha registrado ningún participante en la trivia.</div>`;
         return;
       }
 
-      contenedor.innerHTML = listaJugadores.map((j, index) => {
+      contenedor.innerHTML = resJugadores.map((j, index) => {
         let medalla = `${index + 1}º`;
         if (index === 0) medalla = '🥇';
         if (index === 1) medalla = '🥈';
@@ -816,7 +817,6 @@
       cargarPuntajes();
     }
 
-    /* PREGUNTAS TRIVIA */
     async function cargarPreguntas() {
       if (!slugActual) return;
 
@@ -877,7 +877,6 @@
       cargarPreguntas();
     }
 
-    /* PESTAÑAS Y MODALES */
     function cambiarTab(nombreTab) {
       ['fotos', 'mensajes', 'juego'].forEach(t => {
         document.getElementById(`tab-contenido-${t}`).classList.add('hidden');

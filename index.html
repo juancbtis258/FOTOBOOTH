@@ -84,7 +84,7 @@
     <div class="panel-card p-4 rounded-2xl space-y-2">
       <div class="flex justify-between text-xs font-bold">
         <span class="text-slate-300 flex items-center gap-1.5"><i class="fa-solid fa-images text-amber-400"></i> Progreso de la Galería</span>
-        <span class="text-amber-400"><span id="cant-fotos-actual">0</span> / 500 fotos</span>
+        <span class="text-amber-400"><span id="cant-fotos-actual">0</span> / <span id="cant-fotos-limite">500</span> fotos</span>
       </div>
       <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
         <div id="barra-progreso-galeria" class="bg-amber-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -229,6 +229,7 @@
     let puntajeTrivia = 0;
     let nombreJugadorTrivia = '';
     let webcamStreamInvitado = null;
+    let limiteFotosEvento = 500;
 
     document.addEventListener('DOMContentLoaded', () => {
       iniciarEvento();
@@ -241,11 +242,53 @@
       if (tituloEl) tituloEl.innerText = slug.replace(/-/g, ' ');
       if (btnPortal) btnPortal.href = `/novios.html?evento=${slug}`;
 
+      // Configuración de módulos desde BD
+      const { data: evData } = await _supabase.from('eventos').select('*').eq('slug', slug).maybeSingle();
+      if (evData) {
+        if (evData.limite_fotos) limiteFotosEvento = evData.limite_fotos;
+        document.getElementById('cant-fotos-limite').innerText = limiteFotosEvento;
+
+        if (evData.inc_galeria === false) document.getElementById('tab-btn-pub-galeria').style.display = 'none';
+        if (evData.inc_libro === false) document.getElementById('tab-btn-pub-visitas').style.display = 'none';
+        if (evData.inc_trivia === false) document.getElementById('tab-btn-pub-trivia').style.display = 'none';
+      }
+
       cargarFotosPublicas();
       cargarPreguntasTrivia();
     }
 
-    /* CARGA DE GALERÍA PÚBLICA CON LIKES CORREGIDOS */
+    function comprimirImagen(archivo, calidad = 0.7, maxAncho = 1200) {
+      return new Promise((resolve) => {
+        if (!archivo.type.startsWith('image/')) { resolve(archivo); return; }
+        const reader = new FileReader();
+        reader.readAsDataURL(archivo);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let ancho = img.width;
+            let alto = img.height;
+            if (ancho > maxAncho) {
+              alto = Math.round((alto * maxAncho) / ancho);
+              ancho = maxAncho;
+            }
+            canvas.width = ancho;
+            canvas.height = alto;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, ancho, alto);
+            canvas.toBlob((blob) => {
+              if (blob) resolve(new File([blob], archivo.name, { type: 'image/jpeg' }));
+              else resolve(archivo);
+            }, 'image/jpeg', calidad);
+          };
+          img.onerror = () => resolve(archivo);
+        };
+        reader.onerror = () => resolve(archivo);
+      });
+    }
+
+    /* CARGA DE GALERÍA PÚBLICA */
     async function cargarFotosPublicas() {
       const grid = document.getElementById('galeria-publica-grid');
 
@@ -264,7 +307,7 @@
         }
 
         document.getElementById('cant-fotos-actual').innerText = fotos.length;
-        const pct = Math.min(100, Math.round((fotos.length / 500) * 100));
+        const pct = Math.min(100, Math.round((fotos.length / limiteFotosEvento) * 100));
         document.getElementById('barra-progreso-galeria').style.width = `${pct}%`;
 
         grid.innerHTML = fotos.map(f => {
@@ -283,32 +326,23 @@
       }
     }
 
-    /* INTERACCIÓN INSTANTÁNEA Y DEPOSITADO EN SUPABASE DE LIKES */
     async function darLike(idFoto, likesActuales) {
       const spanCount = document.getElementById(`count-like-${idFoto}`);
       const btn = document.getElementById(`btn-like-${idFoto}`);
 
       const nuevoTotal = likesActuales + 1;
-
-      // Actualizar interfaz visual inmediatamente
       if (spanCount) spanCount.innerText = nuevoTotal;
       if (btn) {
         btn.setAttribute('onclick', `darLike(${idFoto}, ${nuevoTotal})`);
         btn.classList.add('bg-rose-600', 'text-white');
       }
 
-      // Guardar en Supabase
-      const { error } = await _supabase
+      await _supabase
         .from('fotos')
         .update({ likes: nuevoTotal })
         .eq('id', idFoto);
-
-      if (error) {
-        console.error("Error al guardar el like:", error);
-      }
     }
 
-    /* SUBIDA Y CÁMARA WEBCAM */
     function activarCamaraInvitado() {
       const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (esMovil) {
@@ -368,7 +402,6 @@
       event.target.value = '';
     }
 
-    /* PROCESAMIENTO ROBUSTO POR LOTES PARA INVITADOS (HASTA 100+ FOTOS) */
     async function procesarSubidaArchivosPublicos(archivos) {
       if (!archivos || archivos.length === 0) return;
 
@@ -387,17 +420,16 @@
           const numActual = i + subIndex + 1;
           const porcentaje = Math.round((numActual / totalArchivos) * 100);
 
-          if (txt) {
-            txt.innerText = `Subiendo foto ${numActual} de ${totalArchivos} (${porcentaje}%)...`;
-          }
+          if (txt) txt.innerText = `Subiendo foto ${numActual} de ${totalArchivos} (${porcentaje}%)...`;
 
-          const ext = archivo.name.split('.').pop() || 'jpg';
+          const archivoOptimizado = await comprimirImagen(archivo);
+          const ext = archivoOptimizado.name.split('.').pop() || 'jpg';
           const ruta = `${slug}/invitado_${Date.now()}_${numActual}.${ext}`;
 
           try {
             const { error: upErr } = await _supabase.storage
               .from('fotos-eventos')
-              .upload(ruta, archivo, { upsert: true });
+              .upload(ruta, archivoOptimizado, { upsert: true });
 
             if (upErr) return false;
 
@@ -429,7 +461,6 @@
       }
     }
 
-    /* ENVIAR MENSAJE AL LIBRO DE VISITAS */
     async function enviarMensajePrivado(event) {
       event.preventDefault();
       const nom = document.getElementById('nombre-invitado-mensaje').value.trim();
@@ -451,7 +482,6 @@
       }
     }
 
-    /* TRIVIA DE INVITADOS */
     async function cargarPreguntasTrivia() {
       const { data } = await _supabase.from('preguntas').select('*').eq('evento_id', slug);
       preguntasTrivia = data || [];
@@ -530,16 +560,6 @@
         }]);
 
         if (error) {
-          const res2 = await _supabase.from('jugadores').insert([{
-            evento_id: slug,
-            nombre: nombreJugadorTrivia,
-            puntaje: puntajeTrivia
-          }]);
-          error = res2.error;
-        }
-
-        if (error) {
-          console.error("Error guardando puntaje:", error);
           if (elEstado) elEstado.innerHTML = `<i class="fa-solid fa-circle-info"></i> Puntaje final: ${puntajeTrivia} pts.`;
         } else {
           if (elEstado) elEstado.innerHTML = `<i class="fa-solid fa-circle-check"></i> ¡Puntaje registrado exitosamente!`;
@@ -554,7 +574,6 @@
       document.getElementById('trivia-inicio').classList.remove('hidden');
     }
 
-    /* PESTAÑAS Y LIGHTBOX */
     function cambiarTabPublico(tab) {
       ['galeria', 'visitas', 'trivia'].forEach(t => {
         document.getElementById(`tab-pub-${t}`).classList.add('hidden');

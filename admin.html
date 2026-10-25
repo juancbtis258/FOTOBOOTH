@@ -451,7 +451,13 @@
         fecha_evento: fecha,
         limite_fotos: parseInt(limite),
         estado: 'activo',
-        creado_por: usuarioActual
+        tipo_evento: tipo,
+        creado_por: usuarioActual,
+        inc_galeria: incGaleriaFotos,
+        inc_libro: incLibroVisitas,
+        inc_trivia: incTriviaNovios,
+        auto_close: autoClose,
+        dias_vencimiento: diasVencimiento
       };
 
       let { error } = await _supabase.from('eventos').insert([nuevoObjeto]);
@@ -459,14 +465,6 @@
       if (error) {
         alert("Error al guardar evento: " + error.message);
       } else {
-        localStorage.setItem(`zoe_meta_${slug}`, JSON.stringify({ 
-          tipo, 
-          autoClose, 
-          diasVencimiento,
-          incGaleriaFotos,
-          incLibroVisitas,
-          incTriviaNovios
-        }));
         alert("¡Evento registrado con éxito!");
         document.getElementById('input-slug').value = '';
         document.getElementById('input-pin').value = '';
@@ -488,9 +486,8 @@
       hoy.setHours(0,0,0,0);
 
       for (let ev of todosLosEventos) {
-        let meta = JSON.parse(localStorage.getItem(`zoe_meta_${ev.slug}`) || '{}');
-        let autoClose = ev.auto_close !== undefined ? ev.auto_close : meta.autoClose;
-        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : (meta.diasVencimiento || 7);
+        let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
+        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : 7;
 
         if (ev.estado !== 'inactivo' && autoClose && ev.fecha_evento) {
           const fechaEv = new Date(ev.fecha_evento + "T00:00:00");
@@ -538,9 +535,7 @@
         const urlNovios = `${host}/novios.html?evento=${ev.slug}`;
         const urlPantalla = `${host}/pantalla.html?evento=${ev.slug}`;
 
-        let meta = JSON.parse(localStorage.getItem(`zoe_meta_${ev.slug}`) || '{}');
-        let tipoEv = ev.tipo_evento || meta.tipo || 'boda';
-
+        let tipoEv = ev.tipo_evento || 'boda';
         const tipoIcono = ICONOS_TIPO[tipoEv] || '<i class="fa-solid fa-star text-amber-400 mr-1.5"></i>';
 
         let textoWS = `¡Hola! Aquí tienes los accesos para tu evento *${ev.slug.replace(/-/g, ' ')}*:\n\n📸 Galería para invitados: ${urlGaleria}\n💍 Panel de Gestión: ${urlNovios}\n🔑 PIN de Acceso: ${ev.pin_novios}\n📺 Pantalla en Vivo: ${urlPantalla}`;
@@ -556,8 +551,8 @@
           : `<span class="text-slate-600 text-[10px] italic"><i class="fa-solid fa-lock mr-1"></i>Protegido</span>`;
 
         const limiteVal = ev.limite_fotos || 500;
-        let autoClose = ev.auto_close !== undefined ? ev.auto_close : meta.autoClose;
-        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : (meta.diasVencimiento || 7);
+        let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
+        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : 7;
 
         return `
           <tr class="hover:bg-slate-900/40">
@@ -598,16 +593,17 @@
       cargarEventos();
     }
 
-    /* FUNCIONES PARA EDITAR MÓDULOS DEL EVENTO */
-    function abrirModalModulos(slug) {
+    /* FUNCIONES PARA EDITAR MÓDULOS DEL EVENTO DIRECTO EN BD */
+    async function abrirModalModulos(slug) {
       slugEventoEnEdicion = slug;
       document.getElementById('modulos-titulo').innerText = `Módulos - ${slug.replace(/-/g, ' ')}`;
 
-      let meta = JSON.parse(localStorage.getItem(`zoe_meta_${slug}`) || '{}');
-
-      document.getElementById('edit-mod-galeria').checked = meta.incGaleriaFotos !== false;
-      document.getElementById('edit-mod-libro').checked = meta.incLibroVisitas !== false;
-      document.getElementById('edit-mod-trivia').checked = meta.incTriviaNovios !== false;
+      const ev = todosLosEventos.find(e => e.slug === slug);
+      if (ev) {
+        document.getElementById('edit-mod-galeria').checked = ev.inc_galeria !== false;
+        document.getElementById('edit-mod-libro').checked = ev.inc_libro !== false;
+        document.getElementById('edit-mod-trivia').checked = ev.inc_trivia !== false;
+      }
 
       document.getElementById('modal-modulos').classList.remove('hidden');
     }
@@ -616,19 +612,29 @@
       document.getElementById('modal-modulos').classList.add('hidden');
     }
 
-    function guardarModulosModal() {
+    async function guardarModulosModal() {
       if (!slugEventoEnEdicion) return;
 
-      let meta = JSON.parse(localStorage.getItem(`zoe_meta_${slugEventoEnEdicion}`) || '{}');
+      const incGaleria = document.getElementById('edit-mod-galeria').checked;
+      const incLibro = document.getElementById('edit-mod-libro').checked;
+      const incTrivia = document.getElementById('edit-mod-trivia').checked;
 
-      meta.incGaleriaFotos = document.getElementById('edit-mod-galeria').checked;
-      meta.incLibroVisitas = document.getElementById('edit-mod-libro').checked;
-      meta.incTriviaNovios = document.getElementById('edit-mod-trivia').checked;
+      const { error } = await _supabase
+        .from('eventos')
+        .update({ 
+          inc_galeria: incGaleria, 
+          inc_libro: incLibro, 
+          inc_trivia: incTrivia 
+        })
+        .eq('slug', slugEventoEnEdicion);
 
-      localStorage.setItem(`zoe_meta_${slugEventoEnEdicion}`, JSON.stringify(meta));
-
-      alert("¡Módulos actualizados con éxito!");
-      cerrarModalModulos();
+      if (error) {
+        alert("Error al actualizar módulos: " + error.message);
+      } else {
+        alert("¡Módulos actualizados con éxito!");
+        cerrarModalModulos();
+        cargarEventos();
+      }
     }
 
     async function editarPin(slug, pinActual) {
@@ -650,7 +656,6 @@
     async function eliminarEvento(slug) {
       if (confirm(`¿Eliminar evento ${slug}?`)) {
         await _supabase.from('eventos').delete().eq('slug', slug);
-        localStorage.removeItem(`zoe_meta_${slug}`);
         cargarEventos();
       }
     }
