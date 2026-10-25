@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Portal Exclusivo | Zoe Creaciones</title>
+
+  <meta name="theme-color" content="#0d111d">
+  <link rel="apple-touch-icon" href="logotipozoecreaciones.jfif">
+  <link rel="icon" type="image/jfif" href="logotipozoecreaciones.jfif">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- LIBRERÍAS DE APOYO -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      background-color: #0b0e17;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .panel-card {
+      background-color: #0f1523;
+      border: 1px solid #1e293b;
+    }
+    .gold-button {
+      background: linear-gradient(135deg, #f3c262, #e0aa3e);
+      color: #0d111d;
+    }
+    .gold-button:hover {
+      filter: brightness(1.1);
+    }
+    .drag-over {
+      border-color: #f3c262 !important;
+      background-color: rgba(243, 194, 98, 0.05) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 select-none">
+
+  <!-- ENCABEZADO -->
+  <header class="max-w-4xl mx-auto panel-card p-5 rounded-3xl mb-6 shadow-2xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="bg-white p-1.5 rounded-xl shadow-md border border-amber-400/20">
+        <img src="logotipozoecreaciones.jfif" onerror="this.style.display='none'" class="w-8 h-8 rounded-lg object-cover">
+      </div>
+      <div>
+        <span class="text-xs font-black text-amber-400 tracking-widest uppercase block">Portal Exclusivo</span>
+        <h1 id="titulo-evento" class="text-base font-black text-white capitalize">Panel de Evento</h1>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a id="btn-galeria-publica" href="#" class="border border-amber-400/40 text-amber-300 hover:bg-amber-400/10 px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-images text-amber-400"></i> Ver Galería
+      </a>
+      <button id="btn-cerrar-sesion" onclick="cerrarSesion()" class="hidden border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 px-3 py-1.5 rounded-full text-xs font-bold transition">
+        <i class="fa-solid fa-right-from-bracket"></i> Salir
+      </button>
+    </div>
+  </header>
+
+  <!-- ACCESO POR PIN -->
+  <main id="seccion-login" class="max-w-md mx-auto panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+    <div class="text-center space-y-1">
+      <div class="w-12 h-12 bg-amber-400/10 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto mb-2">
+        <i class="fa-solid fa-lock text-amber-400 text-lg"></i>
+      </div>
+      <h2 class="text-lg font-bold text-white">Acceso Privado</h2>
+      <p class="text-xs text-slate-400">Ingresa el PIN asignado a tu evento para gestionar tu galería y juegos.</p>
+    </div>
+
+    <form onsubmit="validarPin(event)" class="space-y-4">
+      <div>
+        <input type="password" id="input-pin" maxlength="6" placeholder="Ingresa tu PIN" required class="w-full bg-[#0b0e17] border border-slate-700 focus:border-amber-400 text-amber-300 text-center font-mono font-bold text-lg px-4 py-3 rounded-xl outline-none tracking-widest">
+      </div>
+      <button type="submit" class="gold-button w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
+        Ingresar al Panel
+      </button>
+    </form>
+  </main>
+
+  <!-- PANEL PRINCIPAL -->
+  <main id="seccion-panel" class="max-w-4xl mx-auto space-y-6 hidden">
+    
+    <!-- MÉTRICAS Y HERRAMIENTA QR -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-camera"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Fotos Subidas</span>
+          <span id="stat-total-fotos" class="text-lg font-black text-white">0</span>
+        </div>
+      </div>
+
+      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-heart"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Reacciones ❤️</span>
+          <span id="stat-total-likes" class="text-lg font-black text-white">0</span>
+        </div>
+      </div>
+
+      <div class="panel-card p-4 rounded-2xl flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-envelope-open-text"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Mensajes</span>
+          <span id="stat-total-mensajes" class="text-lg font-black text-white">0</span>
+        </div>
+      </div>
+
+      <!-- TARJETA GENERADORA DE CÓDIGO QR -->
+      <div onclick="abrirModalQR()" class="panel-card p-4 rounded-2xl flex items-center gap-3 cursor-pointer hover:border-amber-400/40 transition group">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition flex items-center justify-center text-lg">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Código QR</span>
+          <span class="text-xs font-bold text-emerald-400 group-hover:underline">Obtener para Mesas</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZONA DE CARGA DE FOTOS -->
+    <div id="drop-zone" class="panel-card p-6 md:p-8 rounded-3xl shadow-2xl text-center space-y-4 border-2 border-dashed border-slate-700 transition duration-200">
+      <div class="space-y-1">
+        <h3 id="lbl-titulo-subida" class="text-base font-bold text-white">Subir fotos a la galería</h3>
+        <p class="text-xs text-slate-400 max-w-md mx-auto">Toma una foto en el momento o selecciona un lote grande desde tu equipo.</p>
+      </div>
+
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+        <button onclick="activarCamaraDispositivo()" class="gold-button px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-camera text-base"></i>
+          <span>Tomar Foto</span>
+        </button>
+        <input type="file" id="input-camara-novios" accept="image/*" capture="environment" class="hidden" onchange="subirFotoNovios(event)">
+
+        <label for="input-foto-novios" class="border border-amber-400/50 hover:bg-amber-400/10 text-amber-300 px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-images text-base"></i>
+          <span>Seleccionar Fotos</span>
+        </label>
+        <input type="file" id="input-foto-novios" accept="image/*" multiple class="hidden" onchange="subirFotoNovios(event)">
+      </div>
+
+      <p id="subiendo-indicador" class="text-xs text-amber-300 font-bold hidden flex items-center justify-center gap-2 py-2">
+        <i class="fa-solid fa-spinner fa-spin"></i> <span id="texto-progreso">Procesando lote...</span>
+      </p>
+    </div>
+
+    <!-- PESTAÑAS -->
+    <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+      <div class="flex items-center gap-4 md:gap-6 border-b border-slate-800 pb-3 overflow-x-auto">
+        <button id="tab-btn-fotos" onclick="cambiarTab('fotos')" class="text-sm font-bold text-amber-400 border-b-2 border-amber-400 pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-photo-film"></i> Galería (<span id="contador-fotos-badge">0</span>)
+        </button>
+        <button id="tab-btn-mensajes" onclick="cambiarTab('mensajes')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-book-open"></i> Libro de Visitas (<span id="contador-mensajes-badge">0</span>)
+        </button>
+        <button id="tab-btn-juego" onclick="cambiarTab('juego')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-gamepad"></i> Trivia y Participantes
+        </button>
+      </div>
+
+      <!-- SECCIÓN FOTOS -->
+      <div id="tab-contenido-fotos" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btn-descargar-zip" onclick="descargarTodasLasFotos()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-lg active:scale-95">
+              <i class="fa-solid fa-file-zipper"></i> Descargar Todo (.ZIP)
+            </button>
+
+            <button id="btn-modo-seleccion" onclick="toggleModoSeleccion()" class="text-xs border border-slate-700 hover:border-amber-400/50 text-slate-300 font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+              <i class="fa-solid fa-square-check"></i> Selección Múltiple
+            </button>
+
+            <button id="btn-eliminar-seleccionados" onclick="borrarSeleccionadas()" class="hidden text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-lg">
+              <i class="fa-solid fa-trash"></i> Borrar (<span id="count-seleccionados">0</span>)
+            </button>
+          </div>
+
+          <button onclick="cargarFotosNovios()" class="text-xs text-amber-400 font-bold hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-rotate"></i> Actualizar
+          </button>
+        </div>
+
+        <div id="zip-indicador" class="hidden bg-slate-900 border border-emerald-500/30 p-3 rounded-2xl text-center space-y-1">
+          <p id="zip-texto-progreso" class="text-xs text-emerald-400 font-bold flex items-center justify-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin"></i> Preparando paquete ZIP...
+          </p>
+        </div>
+
+        <div id="galeria-novios" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+      </div>
+
+      <!-- SECCIÓN LIBRO DE VISITAS / MENSAJES -->
+      <div id="tab-contenido-mensajes" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-slate-400">Felicitaciones y buenos deseos dejados por tus invitados.</p>
+          <button onclick="cargarMensajes()" class="text-xs text-amber-400 font-bold hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-rotate"></i> Actualizar Mensajes
+          </button>
+        </div>
+
+        <div id="lista-mensajes" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="col-span-full text-center text-slate-500 text-xs py-8">Aún no hay mensajes registrados.</div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN JUEGO / TRIVIA -->
+      <div id="tab-contenido-juego" class="hidden space-y-6">
+        
+        <!-- REGISTRO DE JUGADORES Y PUNTAJES -->
+        <div class="bg-[#0b0e17] border border-amber-400/20 p-5 rounded-2xl space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+              <i class="fa-solid fa-users text-amber-400"></i> Registro de Participantes y Puntos
+            </h3>
+            <button onclick="cargarPuntajes()" class="text-xs bg-amber-400/10 text-amber-300 border border-amber-400/30 px-3 py-1 rounded-lg font-bold hover:bg-amber-400/20 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate"></i> Actualizar Lista
+            </button>
+          </div>
+
+          <div id="lista-puntajes" class="space-y-2">
+            <div class="text-center text-slate-500 text-xs py-4">Cargando lista de participantes...</div>
+          </div>
+        </div>
+
+        <!-- AGREGAR / GESTIONAR PREGUNTAS -->
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-question text-indigo-400"></i> Preguntas del Juego
+          </h3>
+
+          <form onsubmit="guardarPregunta(event)" class="bg-[#0b0e17] p-4 rounded-2xl border border-slate-800 space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Pregunta:</label>
+              <input type="text" id="input-pregunta" placeholder="Ej: ¿Dónde fue su primera cita?" required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Opción A:</label>
+                <input type="text" id="opcion-a" placeholder="Opción A" required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Opción B:</label>
+                <input type="text" id="opcion-b" placeholder="Opción B" required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Opción C:</label>
+                <input type="text" id="opcion-c" placeholder="Opción C" class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Opción D:</label>
+                <input type="text" id="opcion-d" placeholder="Opción D" class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-amber-300 mb-1">Respuesta Correcta:</label>
+              <select id="select-correcta" required class="w-full bg-[#0f1523] border border-amber-400/40 text-amber-300 text-xs px-3 py-2 rounded-xl outline-none">
+                <option value="A">Opción A</option>
+                <option value="B">Opción B</option>
+                <option value="C">Opción C</option>
+                <option value="D">Opción D</option>
+              </select>
+            </div>
+
+            <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
+              Agregar Pregunta
+            </button>
+          </form>
+
+          <!-- LISTA DE PREGUNTAS -->
+          <div id="lista-preguntas" class="space-y-2">
+            <div class="text-center text-slate-500 text-xs py-4">No se han añadido preguntas.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL WEBCAM PARA PC -->
+  <div id="modal-webcam" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="panel-card max-w-lg w-full p-6 rounded-3xl text-center space-y-4 relative shadow-2xl border-amber-400/20">
+      <button onclick="cerrarWebcamPC()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl z-10"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div>
+        <h3 class="text-base font-bold text-white">Captura desde PC</h3>
+        <p class="text-xs text-slate-400 mt-1">Asegúrate de permitir el acceso a tu cámara web.</p>
+      </div>
+
+      <div class="relative bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center border border-slate-800">
+        <video id="video-webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+        <canvas id="canvas-webcam" class="hidden"></canvas>
+      </div>
+
+      <div class="flex items-center justify-center gap-3">
+        <button onclick="tomarFotoWebcamPC()" class="gold-button px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition flex items-center gap-2">
+          <i class="fa-solid fa-circle-dot text-rose-600 text-sm"></i>
+          <span>Capturar Foto</span>
+        </button>
+        <button onclick="cerrarWebcamPC()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-xl font-bold text-xs transition">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CÓDIGO QR PARA MESAS -->
+  <div id="modal-qr" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="panel-card max-w-sm w-full p-6 rounded-3xl text-center space-y-4 relative shadow-2xl border-amber-400/20">
+      <button onclick="cerrarModalQR()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div>
+        <h3 class="text-base font-bold text-white">QR Exclusivo del Evento</h3>
+        <p class="text-xs text-slate-400 mt-1">Imprime o comparte este código QR para colocarlo en las mesas de tus invitados.</p>
+      </div>
+      
+      <div id="qr-container" class="bg-white p-4 rounded-2xl flex items-center justify-center mx-auto w-48 h-48 border-4 border-amber-400/30 shadow-inner"></div>
+
+      <button onclick="descargarQR()" class="gold-button w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-download"></i> Descargar Imagen QR
+      </button>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX PARA VER FOTO -->
+  <div id="modal-lightbox" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="relative max-w-2xl w-full flex flex-col items-center gap-3">
+      <button onclick="cerrarLightbox()" class="absolute -top-10 right-0 text-white text-2xl hover:text-amber-400"><i class="fa-solid fa-xmark"></i></button>
+      <div class="max-h-[75vh] w-full flex items-center justify-center overflow-hidden rounded-2xl border border-amber-400/20 bg-black">
+        <img id="lightbox-img" src="" class="max-h-[75vh] w-auto object-contain">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ugtpsdcjeirfozzggorq.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndHBzZGNqZWlyZm96emdnb3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTY3NzksImV4cCI6MjEwNjA5Mjc3OX0.PiErdyg2S8Be_gwpGRg_jBBrnn2lcqehVc5ITXYO1z8';
+
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const slugActual = urlParams.get('evento');
+
+    let modoSeleccion = false;
+    let fotosSeleccionadas = new Set();
+    let listaFotosGlobal = [];
+    let webcamStream = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!slugActual) {
+        document.getElementById('titulo-evento').innerText = "Evento No Definido";
+        alert("Atención: No se especificó ningún evento en la URL (?evento=slug).");
+        return;
+      }
+
+      document.getElementById('titulo-evento').innerText = slugActual.replace(/-/g, ' ');
+      document.getElementById('btn-galeria-publica').href = `/index.html?evento=${slugActual}`;
+
+      const sesionGuardada = sessionStorage.getItem(`login_novios_${slugActual}`);
+      if (sesionGuardada === 'true') {
+        mostrarPanel();
+      }
+    });
+
+    function mostrarPanel() {
+      document.getElementById('seccion-login').classList.add('hidden');
+      document.getElementById('seccion-panel').classList.remove('hidden');
+      document.getElementById('btn-cerrar-sesion').classList.remove('hidden');
+      
+      configurarDragAndDrop();
+      cargarFotosNovios();
+      cargarMensajes();
+      cargarPreguntas();
+      cargarPuntajes();
+    }
+
+    function configurarDragAndDrop() {
+      const dropZone = document.getElementById('drop-zone');
+      if (!dropZone) return;
+
+      ['dragenter', 'dragover'].forEach(eName => {
+        dropZone.addEventListener(eName, (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); }, false);
+      });
+      ['dragleave', 'drop'].forEach(eName => {
+        dropZone.addEventListener(eName, (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); }, false);
+      });
+      dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) procesarSubidaArchivos(Array.from(files));
+      });
+    }
+
+    function cerrarSesion() {
+      sessionStorage.removeItem(`login_novios_${slugActual}`);
+      window.location.reload();
+    }
+
+    async function validarPin(event) {
+      event.preventDefault();
+      if (!slugActual) return;
+
+      const pinIngresado = document.getElementById('input-pin').value.trim();
+
+      const { data: evento, error } = await _supabase
+        .from('eventos')
+        .select('pin_novios')
+        .eq('slug', slugActual)
+        .maybeSingle();
+
+      if (error || !evento) {
+        alert("Error al validar el PIN o el evento no existe.");
+        return;
+      }
+
+      if (String(pinIngresado) === String(evento.pin_novios || '1234')) {
+        sessionStorage.setItem(`login_novios_${slugActual}`, 'true');
+        mostrarPanel();
+      } else {
+        alert("PIN incorrecto.");
+      }
+    }
+
+    /* GESTIÓN DE CÁMARA */
+    function activarCamaraDispositivo() {
+      const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (esMovil) {
+        document.getElementById('input-camara-novios').click();
+      } else {
+        abrirWebcamPC();
+      }
+    }
+
+    async function abrirWebcamPC() {
+      const modal = document.getElementById('modal-webcam');
+      const video = document.getElementById('video-webcam');
+
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+          audio: false 
+        });
+        video.srcObject = webcamStream;
+        modal.classList.remove('hidden');
+      } catch (err) {
+        alert("No se pudo acceder a la cámara. Por favor comprueba los permisos de tu navegador.");
+      }
+    }
+
+    function cerrarWebcamPC() {
+      const modal = document.getElementById('modal-webcam');
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+      }
+      modal.classList.add('hidden');
+    }
+
+    function tomarFotoWebcamPC() {
+      const video = document.getElementById('video-webcam');
+      const canvas = document.getElementById('canvas-webcam');
+      const context = canvas.getContext('2d');
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const archivoFoto = new File([blob], `webcam_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          cerrarWebcamPC();
+          procesarSubidaArchivos([archivoFoto]);
+        }
+      }, 'image/jpeg', 0.9);
+    }
+
+    function subirFotoNovios(event) {
+      const archivos = Array.from(event.target.files);
+      procesarSubidaArchivos(archivos);
+      event.target.value = '';
+    }
+
+    /* PROCESAMIENTO ROBUSTO POR LOTES */
+    async function procesarSubidaArchivos(archivos) {
+      if (!archivos || archivos.length === 0 || !slugActual) return;
+
+      const indicador = document.getElementById('subiendo-indicador');
+      const textoProgreso = document.getElementById('texto-progreso');
+      indicador.classList.remove('hidden');
+
+      const totalArchivos = archivos.length;
+      let exitosas = 0;
+      const TAMANO_LOTE = 3;
+
+      for (let i = 0; i < totalArchivos; i += TAMANO_LOTE) {
+        const lote = archivos.slice(i, i + TAMANO_LOTE);
+
+        const promesas = lote.map(async (archivo, subIndex) => {
+          const numActual = i + subIndex + 1;
+          const porcentaje = Math.round((numActual / totalArchivos) * 100);
+          
+          if (textoProgreso) {
+            textoProgreso.innerText = `Subiendo foto ${numActual} de ${totalArchivos} (${porcentaje}%)...`;
+          }
+
+          const ext = archivo.name.split('.').pop() || 'jpg';
+          const ruta = `${slugActual}/novios_${Date.now()}_${numActual}.${ext}`;
+
+          try {
+            const { error: uploadError } = await _supabase.storage
+              .from('fotos-eventos')
+              .upload(ruta, archivo, { upsert: true });
+
+            if (uploadError) return false;
+
+            const { data: urlData } = _supabase.storage
+              .from('fotos-eventos')
+              .getPublicUrl(ruta);
+
+            const { error: dbError } = await _supabase
+              .from('fotos')
+              .insert([{ evento_id: slugActual, url_foto: urlData.publicUrl }]);
+
+            return !dbError;
+          } catch (err) {
+            console.error("Error al subir archivo:", err);
+            return false;
+          }
+        });
+
+        const resultados = await Promise.all(promesas);
+        exitosas += resultados.filter(Boolean).length;
+      }
+
+      indicador.classList.add('hidden');
+      if (exitosas > 0) {
+        cargarFotosNovios();
+        alert(`¡Se subieron ${exitosas} de ${totalArchivos} fotos correctamente!`);
+      } else {
+        alert("Hubo un problema al subir las fotos. Revisa tu conexión a internet.");
+      }
+    }
+
+    /* CARGAR FOTOS Y REACCIONES DE LIKES EN PANEL */
+    async function cargarFotosNovios() {
+      if (!slugActual) return;
+
+      const { data: fotos, error } = await _supabase
+        .from('fotos')
+        .select('*')
+        .eq('evento_id', slugActual)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error cargando fotos:", error);
+        return;
+      }
+
+      listaFotosGlobal = fotos || [];
+      const totalFotos = listaFotosGlobal.length;
+
+      // Suma segura de likes
+      let totalLikes = listaFotosGlobal.reduce((acc, f) => {
+        return acc + (parseInt(f.likes) || 0);
+      }, 0);
+
+      document.getElementById('stat-total-fotos').innerText = totalFotos;
+      document.getElementById('stat-total-likes').innerText = totalLikes;
+      document.getElementById('contador-fotos-badge').innerText = totalFotos;
+
+      const galeria = document.getElementById('galeria-novios');
+      if (totalFotos === 0) {
+        galeria.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Aún no hay fotos cargadas en este evento.</div>`;
+        return;
+      }
+
+      galeria.innerHTML = listaFotosGlobal.map(f => {
+        const likesFoto = parseInt(f.likes) || 0;
+        return `
+          <div class="relative group aspect-square bg-slate-900 rounded-2xl overflow-hidden border ${fotosSeleccionadas.has(f.id) ? 'border-rose-500 ring-2 ring-rose-500/50' : 'border-slate-800'} shadow-md">
+            <img src="${f.url_foto}" loading="lazy" onclick="${modoSeleccion ? `toggleSeleccionFoto(${f.id})` : `abrirLightbox('${f.url_foto}')`}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300">
+            
+            <div class="absolute bottom-2 left-2 bg-slate-950/80 text-rose-400 px-2 py-1 rounded-xl text-[11px] font-bold border border-slate-800 flex items-center gap-1 backdrop-blur-md pointer-events-none">
+              <i class="fa-solid fa-heart text-rose-500"></i> <span>${likesFoto}</span>
+            </div>
+
+            ${modoSeleccion ? `
+              <div onclick="toggleSeleccionFoto(${f.id})" class="absolute top-2 left-2 w-6 h-6 rounded-lg ${fotosSeleccionadas.has(f.id) ? 'bg-rose-600 text-white' : 'bg-slate-950/80 border border-slate-600 text-transparent'} flex items-center justify-center cursor-pointer text-xs font-bold shadow-lg"><i class="fa-solid fa-check"></i></div>
+            ` : `
+              <button onclick="eliminarFoto(${f.id})" title="Eliminar foto" class="absolute top-2 right-2 bg-rose-600 hover:bg-rose-700 text-white w-8 h-8 rounded-xl text-xs flex items-center justify-center shadow-lg transition z-20 cursor-pointer active:scale-95"><i class="fa-solid fa-trash-can"></i></button>
+            `}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function eliminarFoto(idFoto) {
+      if (!confirm("¿Deseas eliminar esta foto?")) return;
+
+      const { error } = await _supabase.from('fotos').delete().eq('id', idFoto);
+      if (error) {
+        alert("Error al eliminar la foto: " + error.message);
+      } else {
+        cargarFotosNovios();
+      }
+    }
+
+    function toggleModoSeleccion() {
+      modoSeleccion = !modoSeleccion;
+      fotosSeleccionadas.clear();
+
+      const btnModo = document.getElementById('btn-modo-seleccion');
+      const btnBorrar = document.getElementById('btn-eliminar-seleccionados');
+
+      if (modoSeleccion) {
+        btnModo.classList.add('bg-amber-400', 'text-slate-950', 'border-amber-400');
+        btnModo.classList.remove('border-slate-700', 'text-slate-300');
+        btnBorrar.classList.remove('hidden');
+      } else {
+        btnModo.classList.remove('bg-amber-400', 'text-slate-950', 'border-amber-400');
+        btnModo.classList.add('border-slate-700', 'text-slate-300');
+        btnBorrar.classList.add('hidden');
+      }
+
+      actualizarContadorSeleccion();
+      cargarFotosNovios();
+    }
+
+    function toggleSeleccionFoto(idFoto) {
+      if (fotosSeleccionadas.has(idFoto)) {
+        fotosSeleccionadas.delete(idFoto);
+      } else {
+        fotosSeleccionadas.add(idFoto);
+      }
+      actualizarContadorSeleccion();
+      cargarFotosNovios();
+    }
+
+    function actualizarContadorSeleccion() {
+      document.getElementById('count-seleccionados').innerText = fotosSeleccionadas.size;
+    }
+
+    async function borrarSeleccionadas() {
+      if (fotosSeleccionadas.size === 0) {
+        alert("No has seleccionado ninguna foto.");
+        return;
+      }
+
+      if (!confirm(`¿Eliminar ${fotosSeleccionadas.size} fotos seleccionadas?`)) return;
+
+      const ids = Array.from(fotosSeleccionadas);
+      const { error } = await _supabase.from('fotos').delete().in('id', ids);
+
+      if (error) {
+        alert("Error al eliminar las fotos: " + error.message);
+      } else {
+        toggleModoSeleccion();
+        cargarFotosNovios();
+      }
+    }
+
+    async function descargarTodasLasFotos() {
+      if (listaFotosGlobal.length === 0) {
+        alert("No hay fotos en la galería para descargar.");
+        return;
+      }
+
+      const zipInd = document.getElementById('zip-indicador');
+      const zipTexto = document.getElementById('zip-texto-progreso');
+      zipInd.classList.remove('hidden');
+
+      try {
+        const zip = new JSZip();
+        const carpeta = zip.folder(`fotos_${slugActual}`);
+
+        for (let i = 0; i < listaFotosGlobal.length; i++) {
+          const item = listaFotosGlobal[i];
+          zipTexto.innerText = `Descargando imagen ${i + 1} de ${listaFotosGlobal.length}...`;
+
+          const res = await fetch(item.url_foto);
+          const blob = await res.blob();
+          carpeta.file(`foto_${i + 1}.jpg`, blob);
+        }
+
+        zipTexto.innerText = "Creando archivo ZIP...";
+        const contenidoZip = await zip.generateAsync({ type: "blob" });
+        saveAs(contenidoZip, `galeria_${slugActual}.zip`);
+      } catch (err) {
+        alert("Ocurrió un error al empaquetar el ZIP: " + err.message);
+      } finally {
+        zipInd.classList.add('hidden');
+      }
+    }
+
+    /* GESTIÓN DE MENSAJES */
+    async function cargarMensajes() {
+      if (!slugActual) return;
+
+      const { data: mensajes } = await _supabase
+        .from('mensajes')
+        .select('*')
+        .eq('evento_id', slugActual)
+        .order('created_at', { ascending: false });
+
+      const total = mensajes ? mensajes.length : 0;
+      document.getElementById('stat-total-mensajes').innerText = total;
+      document.getElementById('contador-mensajes-badge').innerText = total;
+
+      const contenedor = document.getElementById('lista-mensajes');
+      if (!mensajes || mensajes.length === 0) {
+        contenedor.innerHTML = `<div class="col-span-full text-center text-slate-500 text-xs py-8">Aún no hay mensajes registrados.</div>`;
+        return;
+      }
+
+      contenedor.innerHTML = mensajes.map(m => `
+        <div class="bg-[#0b0e17] p-4 rounded-2xl border border-slate-800 space-y-2 relative">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-300"><i class="fa-solid fa-user-circle mr-1"></i>${m.nombre || 'Anónimo'}</span>
+            <button onclick="eliminarMensaje(${m.id})" class="text-slate-500 hover:text-rose-400 text-xs transition"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <p class="text-xs text-slate-300 italic">"${m.mensaje}"</p>
+        </div>
+      `).join('');
+    }
+
+    async function eliminarMensaje(idMsg) {
+      if (!confirm("¿Eliminar este mensaje?")) return;
+      await _supabase.from('mensajes').delete().eq('id', idMsg);
+      cargarMensajes();
+    }
+
+    /* PARTICIPANTES / PUNTAJES */
+    async function cargarPuntajes() {
+      if (!slugActual) return;
+
+      const contenedor = document.getElementById('lista-puntajes');
+      let listaJugadores = [];
+
+      let { data: resJugadores } = await _supabase
+        .from('jugadores')
+        .select('*')
+        .or(`evento_id.eq.${slugActual},evento_id.eq.${slugActual.replace(/-/g, ' ')}`);
+
+      if (!resJugadores || resJugadores.length === 0) {
+        let { data: resTodos } = await _supabase.from('jugadores').select('*');
+        resJugadores = resTodos || [];
+      }
+
+      if (resJugadores && resJugadores.length > 0) {
+        listaJugadores = resJugadores.map(j => ({
+          id: j.id,
+          nombre: j.nombre || j.jugador || j.usuario || 'Jugador Anónimo',
+          puntos: j.puntos !== undefined ? j.puntos : (j.puntaje !== undefined ? j.puntaje : 0)
+        }));
+      } else {
+        let { data: resPuntuaciones } = await _supabase.from('puntuaciones').select('*');
+        if (resPuntuaciones && resPuntuaciones.length > 0) {
+          listaJugadores = resPuntuaciones.map(j => ({
+            id: j.id,
+            nombre: j.nombre || j.jugador || 'Jugador Anónimo',
+            puntos: j.puntaje !== undefined ? j.puntaje : (j.puntos || 0)
+          }));
+        }
+      }
+
+      listaJugadores.sort((a, b) => b.puntos - a.puntos);
+
+      if (listaJugadores.length === 0) {
+        contenedor.innerHTML = `<div class="text-center text-slate-500 text-xs py-4">Aún no se ha registrado ningún participante en la trivia.</div>`;
+        return;
+      }
+
+      contenedor.innerHTML = listaJugadores.map((j, index) => {
+        let medalla = `${index + 1}º`;
+        if (index === 0) medalla = '🥇';
+        if (index === 1) medalla = '🥈';
+        if (index === 2) medalla = '🥉';
+
+        return `
+          <div class="flex items-center justify-between bg-[#0f1523] p-3 rounded-xl border border-slate-800 text-xs">
+            <div class="flex items-center gap-3">
+              <span class="font-bold text-base w-6 text-center">${medalla}</span>
+              <span class="font-bold text-white">${j.nombre}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-black text-amber-400 bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">${j.puntos} pts</span>
+              <button onclick="eliminarJugador(${j.id})" title="Eliminar registro" class="text-slate-600 hover:text-rose-400 ml-2 transition"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function eliminarJugador(idJugador) {
+      if (!confirm("¿Deseas eliminar este registro de participante?")) return;
+      await _supabase.from('jugadores').delete().eq('id', idJugador);
+      cargarPuntajes();
+    }
+
+    /* PREGUNTAS TRIVIA */
+    async function cargarPreguntas() {
+      if (!slugActual) return;
+
+      const { data: preguntas } = await _supabase
+        .from('preguntas')
+        .select('*')
+        .eq('evento_id', slugActual)
+        .order('created_at', { ascending: true });
+
+      const contenedor = document.getElementById('lista-preguntas');
+      if (!preguntas || preguntas.length === 0) {
+        contenedor.innerHTML = `<div class="text-center text-slate-500 text-xs py-4">No se han añadido preguntas.</div>`;
+        return;
+      }
+
+      contenedor.innerHTML = preguntas.map((p, idx) => `
+        <div class="bg-[#0b0e17] p-3 rounded-xl border border-slate-800 text-xs space-y-1 relative">
+          <div class="flex items-center justify-between font-bold text-slate-200">
+            <span>${idx + 1}. ${p.pregunta}</span>
+            <button onclick="eliminarPregunta(${p.id})" class="text-rose-500 hover:text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          <div class="text-[11px] text-slate-400 grid grid-cols-2 gap-1 pt-1">
+            <span class="${p.correcta === 'A' ? 'text-emerald-400 font-bold' : ''}">A) ${p.opcion_a}</span>
+            <span class="${p.correcta === 'B' ? 'text-emerald-400 font-bold' : ''}">B) ${p.opcion_b}</span>
+            <span class="${p.correcta === 'C' ? 'text-emerald-400 font-bold' : ''}">C) ${p.opcion_c || '-'}</span>
+            <span class="${p.correcta === 'D' ? 'text-emerald-400 font-bold' : ''}">D) ${p.opcion_d || '-'}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function guardarPregunta(event) {
+      event.preventDefault();
+      if (!slugActual) return;
+
+      const nuevaPregunta = {
+        evento_id: slugActual,
+        pregunta: document.getElementById('input-pregunta').value,
+        opcion_a: document.getElementById('opcion-a').value,
+        opcion_b: document.getElementById('opcion-b').value,
+        opcion_c: document.getElementById('opcion-c').value,
+        opcion_d: document.getElementById('opcion-d').value,
+        correcta: document.getElementById('select-correcta').value
+      };
+
+      const { error } = await _supabase.from('preguntas').insert([nuevaPregunta]);
+      if (error) {
+        alert("Error al guardar la pregunta: " + error.message);
+      } else {
+        event.target.reset();
+        cargarPreguntas();
+      }
+    }
+
+    async function eliminarPregunta(idPregunta) {
+      if (!confirm("¿Eliminar esta pregunta?")) return;
+      await _supabase.from('preguntas').delete().eq('id', idPregunta);
+      cargarPreguntas();
+    }
+
+    /* PESTAÑAS Y MODALES */
+    function cambiarTab(nombreTab) {
+      ['fotos', 'mensajes', 'juego'].forEach(t => {
+        document.getElementById(`tab-contenido-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('text-amber-400', 'border-b-2', 'border-amber-400');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`tab-contenido-${nombreTab}`).classList.remove('hidden');
+      const btnActivo = document.getElementById(`tab-btn-${nombreTab}`);
+      btnActivo.classList.add('text-amber-400', 'border-b-2', 'border-amber-400');
+      btnActivo.classList.remove('text-slate-400');
+
+      if (nombreTab === 'juego') cargarPuntajes();
+      if (nombreTab === 'fotos') cargarFotosNovios();
+      if (nombreTab === 'mensajes') cargarMensajes();
+    }
+
+    function abrirModalQR() {
+      const container = document.getElementById('qr-container');
+      container.innerHTML = '';
+      const urlEvento = `${window.location.origin}/index.html?evento=${slugActual}`;
+
+      new QRCode(container, {
+        text: urlEvento,
+        width: 160,
+        height: 160,
+        colorDark: "#0d111d",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      document.getElementById('modal-qr').classList.remove('hidden');
+    }
+
+    function cerrarModalQR() {
+      document.getElementById('modal-qr').classList.add('hidden');
+    }
+
+    function descargarQR() {
+      const img = document.querySelector('#qr-container img');
+      if (img && img.src) {
+        saveAs(img.src, `QR_${slugActual}.png`);
+      }
+    }
+
+    function abrirLightbox(url) {
+      document.getElementById('lightbox-img').src = url;
+      document.getElementById('modal-lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal-lightbox').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

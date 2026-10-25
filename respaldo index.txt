@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Galería Interactiva | Zoe Creaciones</title>
+
+  <meta name="theme-color" content="#0d111d">
+  <link rel="apple-touch-icon" href="logotipozoecreaciones.jfif">
+  <link rel="icon" type="image/jfif" href="logotipozoecreaciones.jfif">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      background-color: #0b0e17;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .panel-card {
+      background-color: #0f1523;
+      border: 1px solid #1e293b;
+    }
+    .gold-button {
+      background: linear-gradient(135deg, #f3c262, #e0aa3e);
+      color: #0d111d;
+    }
+    .gold-button:hover {
+      filter: brightness(1.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 select-none">
+
+  <!-- ENCABEZADO -->
+  <header class="max-w-4xl mx-auto panel-card p-5 rounded-3xl mb-6 shadow-2xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="bg-amber-400/10 text-amber-400 font-bold p-2.5 rounded-2xl border border-amber-400/20 text-xs">
+        ZC
+      </div>
+      <div>
+        <span class="text-[10px] font-black text-amber-400 tracking-widest uppercase block">Galería Interactiva</span>
+        <h1 id="titulo-evento-publico" class="text-base font-black text-white capitalize">Cargando Evento...</h1>
+      </div>
+    </div>
+
+    <a id="btn-acceso-portal" href="#" class="border border-slate-700 hover:border-amber-400/50 text-slate-300 px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5">
+      <i class="fa-solid fa-lock text-amber-400"></i> Portal del Evento
+    </a>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-4xl mx-auto space-y-6">
+
+    <!-- ZONA DE SUBIDA RÁPIDA -->
+    <div class="panel-card p-6 md:p-8 rounded-3xl shadow-2xl text-center space-y-4">
+      <div class="space-y-1">
+        <h2 class="text-base font-bold text-white">¡Comparte tus fotos con los festejados!</h2>
+        <p class="text-xs text-slate-400 max-w-md mx-auto">Captura los mejores momentos del evento y súbelos directamente a la galería oficial.</p>
+      </div>
+
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+        <button onclick="activarCamaraInvitado()" class="gold-button px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-camera text-base"></i>
+          <span>Tomar Foto</span>
+        </button>
+        <input type="file" id="input-camara-invitado" accept="image/*" capture="environment" class="hidden" onchange="subirFotoInvitado(event)">
+
+        <label for="input-foto-invitado" class="border border-slate-700 hover:border-amber-400/50 text-slate-300 px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-images text-base"></i>
+          <span>Elegir Varias Fotos</span>
+        </label>
+        <input type="file" id="input-foto-invitado" accept="image/*" multiple class="hidden" onchange="subirFotoInvitado(event)">
+      </div>
+
+      <p id="subiendo-indicador-publico" class="text-xs text-amber-300 font-bold hidden flex items-center justify-center gap-2 py-2">
+        <i class="fa-solid fa-spinner fa-spin"></i> <span id="texto-progreso-publico">Subiendo...</span>
+      </p>
+    </div>
+
+    <!-- PROGRESO -->
+    <div class="panel-card p-4 rounded-2xl space-y-2">
+      <div class="flex justify-between text-xs font-bold">
+        <span class="text-slate-300 flex items-center gap-1.5"><i class="fa-solid fa-images text-amber-400"></i> Progreso de la Galería</span>
+        <span class="text-amber-400"><span id="cant-fotos-actual">0</span> / 500 fotos</span>
+      </div>
+      <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+        <div id="barra-progreso-galeria" class="bg-amber-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- PESTAÑAS PÚBLICAS -->
+    <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+      <div class="flex items-center gap-4 md:gap-6 border-b border-slate-800 pb-3 overflow-x-auto">
+        <button id="tab-btn-pub-galeria" onclick="cambiarTabPublico('galeria')" class="text-sm font-bold text-amber-400 border-b-2 border-amber-400 pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-photo-film"></i> Galería en Vivo
+        </button>
+        <button id="tab-btn-pub-visitas" onclick="cambiarTabPublico('visitas')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-envelope"></i> Libro de Visitas (Privado)
+        </button>
+        <button id="tab-btn-pub-trivia" onclick="cambiarTabPublico('trivia')" class="text-sm font-bold text-slate-400 hover:text-white pb-2 transition flex items-center gap-2 whitespace-nowrap">
+          <i class="fa-solid fa-gamepad"></i> ¿Quién conoce más a los festejados?
+        </button>
+      </div>
+
+      <!-- SECCIÓN GALERÍA -->
+      <div id="tab-pub-galeria" class="space-y-4">
+        <div id="galeria-publica-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="col-span-full py-12 text-center text-slate-500 text-xs">Cargando fotos del evento...</div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN MENSAJES -->
+      <div id="tab-pub-visitas" class="hidden space-y-4">
+        <form onsubmit="enviarMensajePrivado(event)" class="bg-[#0b0e17] p-4 rounded-2xl border border-slate-800 space-y-3">
+          <h3 class="text-xs font-bold text-amber-300">Deja tus felicidades y mejores deseos:</h3>
+          <input type="text" id="nombre-invitado-mensaje" placeholder="Tu nombre" required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none">
+          <textarea id="texto-invitado-mensaje" rows="3" placeholder="Escribe tu mensaje aquí..." required class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs px-3 py-2 rounded-xl focus:border-amber-400 outline-none"></textarea>
+          <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
+            Enviar Mensaje
+          </button>
+        </form>
+        <p id="msg-estado-envio" class="text-xs text-center font-bold hidden"></p>
+      </div>
+
+      <!-- SECCIÓN TRIVIA -->
+      <div id="tab-pub-trivia" class="hidden space-y-4">
+        
+        <!-- INICIO TRIVIA -->
+        <div id="trivia-inicio" class="bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 text-center space-y-4">
+          <div class="w-12 h-12 bg-amber-400/10 text-amber-400 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto">
+            <i class="fa-solid fa-trophy text-lg"></i>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-bold text-white">Trivia del Evento</h3>
+            <p class="text-xs text-slate-400">Demuestra qué tanto conoces a los festejados respondiendo las preguntas.</p>
+          </div>
+
+          <div class="max-w-xs mx-auto space-y-3">
+            <input type="text" id="input-nombre-jugador" placeholder="Ingresa tu Nombre completo" class="w-full bg-[#0f1523] border border-slate-700 text-white text-xs text-center px-3 py-2.5 rounded-xl focus:border-amber-400 outline-none font-bold">
+            <button onclick="comenzarTrivia()" class="gold-button w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">
+              ¡Comenzar Trivia!
+            </button>
+          </div>
+        </div>
+
+        <!-- PREGUNTA BOX -->
+        <div id="pregunta-box" class="hidden bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <span id="trivia-progreso-txt" class="text-xs font-bold text-amber-400">Pregunta 1</span>
+            <span id="trivia-puntos-txt" class="text-xs font-bold text-emerald-400">0 pts</span>
+          </div>
+
+          <h3 id="trivia-pregunta-titulo" class="text-sm font-bold text-white">¿Cargando pregunta?</h3>
+
+          <div id="trivia-opciones-container" class="grid grid-cols-1 gap-2"></div>
+        </div>
+
+        <!-- TRIVIA RESULTADO -->
+        <div id="trivia-resultado" class="hidden bg-[#0b0e17] p-6 rounded-2xl border border-slate-800 text-center space-y-4">
+          <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/30 flex items-center justify-center mx-auto">
+            <i class="fa-solid fa-star text-lg"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">¡Trivia Finalizada!</h3>
+          <p id="trivia-puntaje-final" class="text-xs text-slate-300 font-bold"></p>
+          <p id="trivia-estado-guardado" class="text-xs font-bold text-amber-400"></p>
+
+          <button onclick="reiniciarTrivia()" class="border border-amber-400/50 text-amber-300 hover:bg-amber-400/10 px-6 py-2.5 rounded-xl font-bold text-xs transition">
+            Volver a Intentar
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL WEBCAM PARA PC INVITADO -->
+  <div id="modal-webcam-invitado" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="panel-card max-w-lg w-full p-6 rounded-3xl text-center space-y-4 relative shadow-2xl border-amber-400/20">
+      <button onclick="cerrarWebcamPCInvitado()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl z-10"><i class="fa-solid fa-xmark"></i></button>
+      
+      <div>
+        <h3 class="text-base font-bold text-white">Captura desde tu Cámara</h3>
+        <p class="text-xs text-slate-400 mt-1">Asegúrate de permitir el acceso a la cámara en tu navegador.</p>
+      </div>
+
+      <div class="relative bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center border border-slate-800">
+        <video id="video-webcam-invitado" autoplay playsinline class="w-full h-full object-cover"></video>
+        <canvas id="canvas-webcam-invitado" class="hidden"></canvas>
+      </div>
+
+      <div class="flex items-center justify-center gap-3">
+        <button onclick="tomarFotoWebcamPCInvitado()" class="gold-button px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition flex items-center gap-2">
+          <i class="fa-solid fa-circle-dot text-rose-600 text-sm"></i>
+          <span>Tomar Foto</span>
+        </button>
+        <button onclick="cerrarWebcamPCInvitado()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-xl font-bold text-xs transition">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX PARA VER FOTO -->
+  <div id="modal-lightbox" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="relative max-w-2xl w-full flex flex-col items-center gap-3">
+      <button onclick="cerrarLightbox()" class="absolute -top-10 right-0 text-white text-2xl hover:text-amber-400"><i class="fa-solid fa-xmark"></i></button>
+      <div class="max-h-[75vh] w-full flex items-center justify-center overflow-hidden rounded-2xl border border-amber-400/20 bg-black">
+        <img id="lightbox-img" src="" class="max-h-[75vh] w-auto object-contain">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ugtpsdcjeirfozzggorq.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndHBzZGNqZWlyZm96emdnb3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTY3NzksImV4cCI6MjEwNjA5Mjc3OX0.PiErdyg2S8Be_gwpGRg_jBBrnn2lcqehVc5ITXYO1z8';
+
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const slug = urlParams.get('evento') || 'evento-demo';
+
+    let preguntasTrivia = [];
+    let indiceTrivia = 0;
+    let puntajeTrivia = 0;
+    let nombreJugadorTrivia = '';
+    let webcamStreamInvitado = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      iniciarEvento();
+    });
+
+    async function iniciarEvento() {
+      const tituloEl = document.getElementById('titulo-evento-publico');
+      const btnPortal = document.getElementById('btn-acceso-portal');
+
+      if (tituloEl) tituloEl.innerText = slug.replace(/-/g, ' ');
+      if (btnPortal) btnPortal.href = `/novios.html?evento=${slug}`;
+
+      cargarFotosPublicas();
+      cargarPreguntasTrivia();
+    }
+
+    /* CARGA DE GALERÍA PÚBLICA CON LIKES CORREGIDOS */
+    async function cargarFotosPublicas() {
+      const grid = document.getElementById('galeria-publica-grid');
+
+      try {
+        const { data: fotos, error } = await _supabase
+          .from('fotos')
+          .select('*')
+          .eq('evento_id', slug)
+          .order('created_at', { ascending: false });
+
+        if (error || !fotos || fotos.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">Sé el primero en subir una foto a la galería.</div>`;
+          document.getElementById('cant-fotos-actual').innerText = '0';
+          document.getElementById('barra-progreso-galeria').style.width = '0%';
+          return;
+        }
+
+        document.getElementById('cant-fotos-actual').innerText = fotos.length;
+        const pct = Math.min(100, Math.round((fotos.length / 500) * 100));
+        document.getElementById('barra-progreso-galeria').style.width = `${pct}%`;
+
+        grid.innerHTML = fotos.map(f => {
+          const likesActuales = f.likes || 0;
+          return `
+            <div class="relative group aspect-square bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-md">
+              <img src="${f.url_foto}" loading="lazy" onclick="abrirLightbox('${f.url_foto}')" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-300">
+              <button id="btn-like-${f.id}" onclick="darLike(${f.id}, ${likesActuales})" class="absolute bottom-2 right-2 bg-slate-950/80 hover:bg-rose-600/80 text-rose-400 hover:text-white px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 backdrop-blur-md border border-slate-700 active:scale-90">
+                <i class="fa-solid fa-heart text-rose-500"></i> <span id="count-like-${f.id}">${likesActuales}</span>
+              </button>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("Error al cargar fotos:", err);
+      }
+    }
+
+    /* INTERACCIÓN INSTANTÁNEA Y DEPOSITADO EN SUPABASE DE LIKES */
+    async function darLike(idFoto, likesActuales) {
+      const spanCount = document.getElementById(`count-like-${idFoto}`);
+      const btn = document.getElementById(`btn-like-${idFoto}`);
+
+      const nuevoTotal = likesActuales + 1;
+
+      // Actualizar interfaz visual inmediatamente
+      if (spanCount) spanCount.innerText = nuevoTotal;
+      if (btn) {
+        btn.setAttribute('onclick', `darLike(${idFoto}, ${nuevoTotal})`);
+        btn.classList.add('bg-rose-600', 'text-white');
+      }
+
+      // Guardar en Supabase
+      const { error } = await _supabase
+        .from('fotos')
+        .update({ likes: nuevoTotal })
+        .eq('id', idFoto);
+
+      if (error) {
+        console.error("Error al guardar el like:", error);
+      }
+    }
+
+    /* SUBIDA Y CÁMARA WEBCAM */
+    function activarCamaraInvitado() {
+      const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (esMovil) {
+        document.getElementById('input-camara-invitado').click();
+      } else {
+        abrirWebcamPCInvitado();
+      }
+    }
+
+    async function abrirWebcamPCInvitado() {
+      const modal = document.getElementById('modal-webcam-invitado');
+      const video = document.getElementById('video-webcam-invitado');
+
+      try {
+        webcamStreamInvitado = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+          audio: false 
+        });
+        video.srcObject = webcamStreamInvitado;
+        modal.classList.remove('hidden');
+      } catch (err) {
+        alert("No se pudo acceder a la cámara. Revisa los permisos de tu navegador o selecciona una foto desde tus archivos.");
+        document.getElementById('input-foto-invitado').click();
+      }
+    }
+
+    function cerrarWebcamPCInvitado() {
+      const modal = document.getElementById('modal-webcam-invitado');
+      if (webcamStreamInvitado) {
+        webcamStreamInvitado.getTracks().forEach(track => track.stop());
+        webcamStreamInvitado = null;
+      }
+      modal.classList.add('hidden');
+    }
+
+    function tomarFotoWebcamPCInvitado() {
+      const video = document.getElementById('video-webcam-invitado');
+      const canvas = document.getElementById('canvas-webcam-invitado');
+      const context = canvas.getContext('2d');
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const archivoFoto = new File([blob], `webcam_invitado_${Date.now()}.jpg`, { type: 'image/jpeg' });
+          cerrarWebcamPCInvitado();
+          procesarSubidaArchivosPublicos([archivoFoto]);
+        }
+      }, 'image/jpeg', 0.9);
+    }
+
+    function subirFotoInvitado(event) {
+      const archivos = Array.from(event.target.files);
+      procesarSubidaArchivosPublicos(archivos);
+      event.target.value = '';
+    }
+
+    /* PROCESAMIENTO ROBUSTO POR LOTES PARA INVITADOS (HASTA 100+ FOTOS) */
+    async function procesarSubidaArchivosPublicos(archivos) {
+      if (!archivos || archivos.length === 0) return;
+
+      const ind = document.getElementById('subiendo-indicador-publico');
+      const txt = document.getElementById('texto-progreso-publico');
+      ind.classList.remove('hidden');
+
+      const totalArchivos = archivos.length;
+      let subidas = 0;
+      const TAMANO_LOTE = 3;
+
+      for (let i = 0; i < totalArchivos; i += TAMANO_LOTE) {
+        const lote = archivos.slice(i, i + TAMANO_LOTE);
+
+        const promesas = lote.map(async (archivo, subIndex) => {
+          const numActual = i + subIndex + 1;
+          const porcentaje = Math.round((numActual / totalArchivos) * 100);
+
+          if (txt) {
+            txt.innerText = `Subiendo foto ${numActual} de ${totalArchivos} (${porcentaje}%)...`;
+          }
+
+          const ext = archivo.name.split('.').pop() || 'jpg';
+          const ruta = `${slug}/invitado_${Date.now()}_${numActual}.${ext}`;
+
+          try {
+            const { error: upErr } = await _supabase.storage
+              .from('fotos-eventos')
+              .upload(ruta, archivo, { upsert: true });
+
+            if (upErr) return false;
+
+            const { data: urlData } = _supabase.storage
+              .from('fotos-eventos')
+              .getPublicUrl(ruta);
+
+            const { error: dbErr } = await _supabase
+              .from('fotos')
+              .insert([{ evento_id: slug, url_foto: urlData.publicUrl }]);
+
+            return !dbErr;
+          } catch (err) {
+            console.error("Error subida pública:", err);
+            return false;
+          }
+        });
+
+        const resultados = await Promise.all(promesas);
+        subidas += resultados.filter(Boolean).length;
+      }
+
+      ind.classList.add('hidden');
+      if (subidas > 0) {
+        cargarFotosPublicas();
+        alert(`¡Se enviaron ${subidas} de ${totalArchivos} fotos exitosamente a la galería!`);
+      } else {
+        alert("Ocurrió un inconveniente al enviar las imágenes. Inténtalo nuevamente.");
+      }
+    }
+
+    /* ENVIAR MENSAJE AL LIBRO DE VISITAS */
+    async function enviarMensajePrivado(event) {
+      event.preventDefault();
+      const nom = document.getElementById('nombre-invitado-mensaje').value.trim();
+      const msg = document.getElementById('texto-invitado-mensaje').value.trim();
+      const elEstado = document.getElementById('msg-estado-envio');
+
+      if (!nom || !msg) return;
+
+      const { error } = await _supabase.from('mensajes').insert([{ evento_id: slug, nombre: nom, mensaje: msg }]);
+
+      elEstado.classList.remove('hidden');
+      if (error) {
+        elEstado.className = "text-xs text-center font-bold text-rose-400";
+        elEstado.innerText = "Error al enviar mensaje. Inténtalo nuevamente.";
+      } else {
+        elEstado.className = "text-xs text-center font-bold text-emerald-400";
+        elEstado.innerText = "¡Tu mensaje ha sido guardado exitosamente para los festejados!";
+        event.target.reset();
+      }
+    }
+
+    /* TRIVIA DE INVITADOS */
+    async function cargarPreguntasTrivia() {
+      const { data } = await _supabase.from('preguntas').select('*').eq('evento_id', slug);
+      preguntasTrivia = data || [];
+    }
+
+    function comenzarTrivia() {
+      const nom = document.getElementById('input-nombre-jugador').value.trim();
+      if (!nom) {
+        alert("Por favor ingresa tu nombre para comenzar.");
+        return;
+      }
+
+      if (preguntasTrivia.length === 0) {
+        alert("Aún no hay preguntas añadidas para la trivia de este evento.");
+        return;
+      }
+
+      nombreJugadorTrivia = nom;
+      indiceTrivia = 0;
+      puntajeTrivia = 0;
+
+      document.getElementById('trivia-inicio').classList.add('hidden');
+      document.getElementById('pregunta-box').classList.remove('hidden');
+
+      mostrarPreguntaTrivia();
+    }
+
+    function mostrarPreguntaTrivia() {
+      const p = preguntasTrivia[indiceTrivia];
+      document.getElementById('trivia-progreso-txt').innerText = `Pregunta ${indiceTrivia + 1} de ${preguntasTrivia.length}`;
+      document.getElementById('trivia-puntos-txt').innerText = `${puntajeTrivia} pts`;
+      document.getElementById('trivia-pregunta-titulo').innerText = p.pregunta;
+
+      const opciones = [
+        { key: 'A', txt: p.opcion_a },
+        { key: 'B', txt: p.opcion_b },
+        { key: 'C', txt: p.opcion_c },
+        { key: 'D', txt: p.opcion_d }
+      ].filter(o => o.txt && o.txt.trim() !== '');
+
+      const container = document.getElementById('trivia-opciones-container');
+      container.innerHTML = opciones.map(o => `
+        <button onclick="responderTrivia('${o.key}')" class="bg-[#0f1523] border border-slate-700 hover:border-amber-400/80 text-slate-200 hover:text-amber-300 p-3 rounded-xl font-bold text-xs text-left transition">
+          ${o.key}) ${o.txt}
+        </button>
+      `).join('');
+    }
+
+    async function responderTrivia(keySeleccionada) {
+      if (keySeleccionada === preguntasTrivia[indiceTrivia].correcta) {
+        puntajeTrivia += 10;
+      }
+
+      indiceTrivia++;
+
+      if (indiceTrivia < preguntasTrivia.length) {
+        mostrarPreguntaTrivia();
+      } else {
+        document.getElementById('pregunta-box').classList.add('hidden');
+        document.getElementById('trivia-resultado').classList.remove('hidden');
+        document.getElementById('trivia-puntaje-final').innerText = `${nombreJugadorTrivia}, obtuviste ${puntajeTrivia} de ${preguntasTrivia.length * 10} puntos posibles.`;
+
+        await guardarPuntajeTrivia();
+      }
+    }
+
+    async function guardarPuntajeTrivia() {
+      const elEstado = document.getElementById('trivia-estado-guardado');
+      if (elEstado) elEstado.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Registrando puntaje...`;
+
+      try {
+        let { error } = await _supabase.from('jugadores').insert([{
+          evento_id: slug,
+          nombre: nombreJugadorTrivia,
+          puntos: puntajeTrivia
+        }]);
+
+        if (error) {
+          const res2 = await _supabase.from('jugadores').insert([{
+            evento_id: slug,
+            nombre: nombreJugadorTrivia,
+            puntaje: puntajeTrivia
+          }]);
+          error = res2.error;
+        }
+
+        if (error) {
+          console.error("Error guardando puntaje:", error);
+          if (elEstado) elEstado.innerHTML = `<i class="fa-solid fa-circle-info"></i> Puntaje final: ${puntajeTrivia} pts.`;
+        } else {
+          if (elEstado) elEstado.innerHTML = `<i class="fa-solid fa-circle-check"></i> ¡Puntaje registrado exitosamente!`;
+        }
+      } catch (e) {
+        console.error("Excepción:", e);
+      }
+    }
+
+    function reiniciarTrivia() {
+      document.getElementById('trivia-resultado').classList.add('hidden');
+      document.getElementById('trivia-inicio').classList.remove('hidden');
+    }
+
+    /* PESTAÑAS Y LIGHTBOX */
+    function cambiarTabPublico(tab) {
+      ['galeria', 'visitas', 'trivia'].forEach(t => {
+        document.getElementById(`tab-pub-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-pub-${t}`);
+        btn.classList.remove('text-amber-400', 'border-b-2', 'border-amber-400');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`tab-pub-${tab}`).classList.remove('hidden');
+      const btnActivo = document.getElementById(`tab-btn-pub-${tab}`);
+      btnActivo.classList.add('text-amber-400', 'border-b-2', 'border-amber-400');
+      btnActivo.classList.remove('text-slate-400');
+    }
+
+    function abrirLightbox(url) {
+      document.getElementById('lightbox-img').src = url;
+      document.getElementById('modal-lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal-lightbox').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

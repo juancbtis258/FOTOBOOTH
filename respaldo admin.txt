@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Maestro Pro | Zoe Creaciones</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body { background-color: #0b0e17; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    .panel-card { background-color: #0f1523; border: 1px solid #1e293b; }
+    .gold-button { background: linear-gradient(135deg, #f3c262, #e0aa3e); color: #0d111d; }
+    .gold-button:hover { filter: brightness(1.1); }
+    .tab-active { border-b-2 border-amber-400 text-amber-400 font-bold; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 select-none">
+
+  <!-- 1. LOGIN -->
+  <div id="seccion-login" class="min-h-[80vh] flex items-center justify-center">
+    <div class="panel-card p-8 rounded-3xl shadow-2xl max-w-sm w-full space-y-6 border border-amber-400/20">
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 bg-amber-400/10 rounded-2xl border border-amber-400/30 flex items-center justify-center mx-auto">
+          <i class="fa-solid fa-shield-halved text-amber-400 text-2xl"></i>
+        </div>
+        <h1 class="text-xl font-black text-white">Portal Zoe Creaciones</h1>
+        <p class="text-xs text-slate-400">Selecciona tu tipo de acceso</p>
+      </div>
+
+      <div class="flex border-b border-slate-800 text-xs">
+        <button id="tab-colab" type="button" onclick="cambiarTab('colab')" class="flex-1 py-2 text-center tab-active transition">Colaborador</button>
+        <button id="tab-admin" type="button" onclick="cambiarTab('admin')" class="flex-1 py-2 text-center text-slate-500 transition">Admin Maestro</button>
+      </div>
+
+      <form id="form-login-colab" onsubmit="loginColaborador(event)" class="space-y-4">
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Usuario</label>
+          <input type="text" id="login-user" required placeholder="ej: juan" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none text-sm">
+        </div>
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Contraseña</label>
+          <input type="password" id="login-pass" required placeholder="••••••••" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-bold px-4 py-3 rounded-xl outline-none text-sm">
+        </div>
+        <button type="submit" class="gold-button w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">Ingresar al Panel</button>
+      </form>
+
+      <form id="form-login-admin" onsubmit="loginAdmin(event)" class="space-y-4 hidden">
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1 text-center">PIN Maestro</label>
+          <input type="password" id="login-pin" required placeholder="9999" class="w-full bg-[#0b0e17] border border-slate-700 text-amber-300 font-mono font-bold text-center text-xl px-4 py-3 rounded-xl outline-none tracking-widest">
+        </div>
+        <button type="submit" class="gold-button w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">Desbloquear Maestro</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. PANEL DE CONTROL -->
+  <main id="seccion-panel" class="max-w-6xl mx-auto space-y-6 hidden">
+    <div class="panel-card p-6 rounded-3xl shadow-2xl flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="bg-white p-2 rounded-2xl shadow-md">
+          <img src="logotipozoecreaciones.jfif" onerror="this.style.display='none'" class="w-10 h-10 rounded-xl object-cover">
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="badge-rol" class="text-[9px] bg-slate-800 text-slate-300 font-bold px-2 py-0.5 rounded-full uppercase">ROL</span>
+            <span id="label-usuario" class="text-xs font-mono text-amber-400">Usuario</span>
+          </div>
+          <h1 class="text-xl font-black text-white">Gestión de Eventos Zoe</h1>
+        </div>
+      </div>
+      <button type="button" onclick="cerrarSesion()" class="text-rose-400 text-xs font-bold flex items-center gap-1.5 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 transition">
+        <i class="fa-solid fa-right-from-bracket"></i> Salir
+      </button>
+    </div>
+
+    <!-- METRICAS -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="panel-card p-4 rounded-2xl border-l-4 border-amber-400 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Eventos</p>
+          <h3 id="kpi-total" class="text-2xl font-black text-white">0</h3>
+        </div>
+        <i class="fa-solid fa-calendar-check text-amber-400/30 text-3xl"></i>
+      </div>
+      <div class="panel-card p-4 rounded-2xl border-l-4 border-emerald-400 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Eventos Activos</p>
+          <h3 id="kpi-activos" class="text-2xl font-black text-emerald-400">0</h3>
+        </div>
+        <i class="fa-solid fa-bolt text-emerald-400/30 text-3xl"></i>
+      </div>
+      <div class="panel-card p-4 rounded-2xl border-l-4 border-blue-400 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Capacidad Fotos</p>
+          <h3 id="kpi-capacidad" class="text-2xl font-black text-blue-400">0</h3>
+        </div>
+        <i class="fa-solid fa-images text-blue-400/30 text-3xl"></i>
+      </div>
+      <div class="panel-card p-4 rounded-2xl border-l-4 border-purple-400 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Colaboradores</p>
+          <h3 id="kpi-colabs" class="text-2xl font-black text-purple-400">0</h3>
+        </div>
+        <i class="fa-solid fa-users text-purple-400/30 text-3xl"></i>
+      </div>
+    </div>
+
+    <!-- REGISTRAR COLABORADORES (ADMIN) -->
+    <div id="modulo-colaboradores" class="grid grid-cols-1 md:grid-cols-12 gap-6 hidden">
+      <div class="md:col-span-5 panel-card p-6 rounded-3xl shadow-2xl space-y-4 border-l-4 border-amber-400">
+        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-user-plus mr-1"></i> Registrar Nuevo Colaborador</h2>
+        <form onsubmit="crearUsuario(event)" class="space-y-3">
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Usuario:</label>
+            <input type="text" id="nuevo-user" required placeholder="ej: carlos" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3.5 py-2 rounded-xl outline-none text-xs">
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Contraseña:</label>
+            <input type="text" id="nueva-pass" required placeholder="ej: 123456" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3.5 py-2 rounded-xl outline-none text-xs">
+          </div>
+          <button type="submit" class="gold-button w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-wider">Guardar Colaborador</button>
+        </form>
+      </div>
+
+      <div class="md:col-span-7 panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-users mr-1"></i> Colaboradores Activos</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-[10px] font-black text-slate-400 uppercase">
+                <th class="pb-2 px-2">Usuario</th>
+                <th class="pb-2 px-2">Clave</th>
+                <th class="pb-2 px-2 text-right">Opciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-usuarios" class="divide-y divide-slate-800/60 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTRAR EVENTO -->
+    <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+      <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-calendar-plus mr-1"></i> Registrar Evento Completo</h2>
+      <form onsubmit="guardarEvento(event)" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        <div class="md:col-span-3 space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Tipo de Evento:</label>
+          <select id="input-tipo" class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+            <option value="boda">💍 Boda</option>
+            <option value="xv">👑 XV Años</option>
+            <option value="graduacion">🎓 Graduación</option>
+            <option value="cumple">🎂 Cumpleaños</option>
+            <option value="corporativo">🏢 Corporativo / Otro</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-3 space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Nombre del Evento / Slug:</label>
+          <input type="text" id="input-slug" placeholder="ej: mariana-y-pedro" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+        </div>
+
+        <div class="md:col-span-2 space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Fecha Evento:</label>
+          <input type="date" id="input-fecha" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+        </div>
+
+        <div class="md:col-span-2 space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">PIN Clientes:</label>
+          <input type="text" id="input-pin" maxlength="6" placeholder="1234" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs tracking-widest">
+        </div>
+
+        <div class="md:col-span-2 space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Límite Fotos:</label>
+          <input type="number" id="input-limite" value="500" required class="w-full bg-[#0b0e17] border border-slate-800 text-amber-300 font-bold px-3 py-3 rounded-xl outline-none text-xs">
+        </div>
+
+        <!-- MÓDULOS ACTIVOS EN LA VISTA DEL INVITADO -->
+        <div class="md:col-span-12 p-3 bg-[#0b0e17] border border-slate-800 rounded-xl space-y-2">
+          <label class="text-[10px] font-black text-amber-400 uppercase tracking-wider block">
+            <i class="fa-solid fa-list-check mr-1"></i> Módulos visibles para Invitados (index.html):
+          </label>
+          <div class="flex flex-wrap gap-4 text-xs">
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="inc-galeria-fotos" checked class="accent-amber-400"> Galería en Vivo
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="inc-libro-visitas" checked class="accent-amber-400"> Libro de Visitas (Privado)
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="inc-trivia-novios" checked class="accent-amber-400"> Trivia "¿Quién conoce más?"
+            </label>
+          </div>
+        </div>
+
+        <div class="md:col-span-12 flex items-center justify-between pt-2 border-t border-slate-800/60">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="check-auto-close" checked class="w-4 h-4 accent-amber-400 rounded">
+            <label for="check-auto-close" class="text-xs text-slate-300 font-medium">
+              Auto-desactivar evento <input type="number" id="dias-vencimiento" value="7" class="w-12 bg-[#0b0e17] border border-slate-700 text-center font-bold text-amber-300 rounded px-1 py-0.5 mx-1 text-xs"> días después.
+            </label>
+          </div>
+          <button type="submit" class="gold-button px-8 py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-xl active:scale-95 transition">
+            <i class="fa-solid fa-plus mr-1"></i> Guardar Evento
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABLA DE EVENTOS -->
+    <div class="panel-card p-6 rounded-3xl shadow-2xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <h2 class="text-xs font-black text-amber-400 tracking-widest uppercase"><i class="fa-solid fa-list mr-1"></i> Control General de Eventos</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            <input type="text" id="input-buscar" oninput="filtrarEventos()" placeholder="Buscar evento..." class="bg-[#0b0e17] border border-slate-800 text-slate-200 text-xs pl-8 pr-3 py-1.5 rounded-xl outline-none focus:border-amber-400">
+          </div>
+          <button onclick="filtrarEstado('todos')" id="btn-filtro-todos" class="bg-amber-400 text-slate-950 font-black text-[10px] px-3 py-1.5 rounded-xl">TODOS</button>
+          <button onclick="filtrarEstado('activo')" id="btn-filtro-activo" class="bg-slate-800 text-slate-400 font-bold text-[10px] px-3 py-1.5 rounded-xl border border-slate-700">ACTIVOS</button>
+          <button onclick="filtrarEstado('inactivo')" id="btn-filtro-inactivo" class="bg-slate-800 text-slate-400 font-bold text-[10px] px-3 py-1.5 rounded-xl border border-slate-700">INACTIVOS</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 text-[10px] font-black text-slate-400 uppercase">
+              <th class="pb-3 px-2">Estado</th>
+              <th class="pb-3 px-2">Tipo / Evento</th>
+              <th class="pb-3 px-2">Fecha / Vigencia</th>
+              <th class="pb-3 px-2">Creado Por</th>
+              <th class="pb-3 px-2">PIN</th>
+              <th class="pb-3 px-2">Límite</th>
+              <th class="pb-3 px-2">Enlaces & Herramientas</th>
+              <th class="pb-3 px-2 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-eventos" class="divide-y divide-slate-800/60 font-medium"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL EDITAR MÓDULOS DEL EVENTO -->
+  <div id="modal-modulos" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="panel-card p-6 rounded-3xl border border-amber-400/30 max-w-sm w-full space-y-4 relative">
+      <button onclick="cerrarModalModulos()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 id="modulos-titulo" class="text-sm font-black text-amber-400">Gestionar Módulos del Evento</h3>
+      <p class="text-[10px] text-slate-400">Activa o desactiva las secciones visibles para la vista de los invitados:</p>
+      
+      <div class="space-y-3 pt-2 text-xs">
+        <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
+          <input type="checkbox" id="edit-mod-galeria" class="accent-amber-400">
+          <span><i class="fa-solid fa-images text-amber-400 mr-1"></i> Galería en Vivo</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
+          <input type="checkbox" id="edit-mod-libro" class="accent-amber-400">
+          <span><i class="fa-solid fa-envelope text-amber-400 mr-1"></i> Libro de Visitas (Privado)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer bg-[#0b0e17] p-2.5 rounded-xl border border-slate-800 text-slate-200">
+          <input type="checkbox" id="edit-mod-trivia" class="accent-amber-400">
+          <span><i class="fa-solid fa-gamepad text-amber-400 mr-1"></i> Trivia "¿Quién conoce más?"</span>
+        </label>
+      </div>
+
+      <button type="button" onclick="guardarModulosModal()" class="gold-button w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider">
+        <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Cambios
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL QR -->
+  <div id="modal-qr" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="panel-card p-6 rounded-3xl border border-amber-400/30 max-w-sm w-full space-y-4 text-center relative">
+      <button onclick="cerrarModalQR()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      <h3 id="qr-titulo" class="text-sm font-black text-amber-400 capitalize">Código QR del Evento</h3>
+      <div id="qr-container" class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-inner"></div>
+      <p class="text-[10px] text-slate-400">Escanea para acceder a la galería del invitado.</p>
+      <button id="btn-descargar-qr" onclick="descargarQR()" class="gold-button w-full py-2 rounded-xl text-xs font-black uppercase"><i class="fa-solid fa-download mr-1"></i> Descargar QR</button>
+    </div>
+  </div>
+
+  <script>
+    const PIN_MAESTRO = "9999"; 
+    const SUPABASE_URL = 'https://ugtpsdcjeirfozzggorq.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVndHBzZGNqZWlyZm96emdnb3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1MTY3NzksImV4cCI6MjEwNjA5Mjc3OX0.PiErdyg2S8Be_gwpGRg_jBBrnn2lcqehVc5ITXYO1z8';
+    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let esAdmin = false;
+    let usuarioActual = "";
+    let todosLosEventos = [];
+    let filtroEstadoActual = 'todos';
+    let slugEventoEnEdicion = "";
+
+    const ICONOS_TIPO = {
+      boda: '<i class="fa-solid fa-ring text-amber-400 mr-1.5"></i>',
+      xv: '<i class="fa-solid fa-crown text-purple-400 mr-1.5"></i>',
+      graduacion: '<i class="fa-solid fa-graduation-cap text-blue-400 mr-1.5"></i>',
+      cumple: '<i class="fa-solid fa-cake-candles text-rose-400 mr-1.5"></i>',
+      corporativo: '<i class="fa-solid fa-building text-emerald-400 mr-1.5"></i>'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const sesionRol = sessionStorage.getItem('zoe_rol');
+      if (sesionRol) {
+        esAdmin = (sesionRol === 'admin');
+        usuarioActual = sessionStorage.getItem('zoe_usuario');
+        iniciarPanel();
+      }
+    });
+
+    function cambiarTab(tipo) {
+      if (tipo === 'colab') {
+        document.getElementById('tab-colab').className = "flex-1 py-2 text-center tab-active transition";
+        document.getElementById('tab-admin').className = "flex-1 py-2 text-center text-slate-500 transition";
+        document.getElementById('form-login-colab').classList.remove('hidden');
+        document.getElementById('form-login-admin').classList.add('hidden');
+      } else {
+        document.getElementById('tab-admin').className = "flex-1 py-2 text-center tab-active transition";
+        document.getElementById('tab-colab').className = "flex-1 py-2 text-center text-slate-500 transition";
+        document.getElementById('form-login-admin').classList.remove('hidden');
+        document.getElementById('form-login-colab').classList.add('hidden');
+      }
+    }
+
+    async function loginColaborador(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-user').value.trim().toLowerCase();
+      const p = document.getElementById('login-pass').value.trim();
+
+      const { data } = await _supabase.from('usuarios_colaboradores').select('*').eq('usuario', u).eq('password', p).maybeSingle();
+      if (data) {
+        esAdmin = false;
+        usuarioActual = data.usuario;
+        guardarSesion();
+      } else {
+        alert("Usuario o contraseña incorrectos");
+      }
+    }
+
+    function loginAdmin(e) {
+      e.preventDefault();
+      if (document.getElementById('login-pin').value.trim() === PIN_MAESTRO) {
+        esAdmin = true;
+        usuarioActual = "Admin Master";
+        guardarSesion();
+      } else {
+        alert("PIN Maestro incorrecto");
+      }
+    }
+
+    function guardarSesion() {
+      sessionStorage.setItem('zoe_rol', esAdmin ? 'admin' : 'colab');
+      sessionStorage.setItem('zoe_usuario', usuarioActual);
+      iniciarPanel();
+    }
+
+    function cerrarSesion() {
+      sessionStorage.clear();
+      document.getElementById('seccion-panel').classList.add('hidden');
+      document.getElementById('seccion-login').classList.remove('hidden');
+    }
+
+    function iniciarPanel() {
+      document.getElementById('seccion-login').classList.add('hidden');
+      document.getElementById('seccion-panel').classList.remove('hidden');
+
+      const badge = document.getElementById('badge-rol');
+      document.getElementById('label-usuario').innerText = usuarioActual;
+
+      if (esAdmin) {
+        badge.innerText = "ADMIN MAESTRO";
+        badge.className = "text-[9px] bg-amber-400/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-400/30 uppercase";
+        document.getElementById('modulo-colaboradores').classList.remove('hidden');
+        cargarUsuarios();
+      } else {
+        badge.innerText = "COLABORADOR";
+        badge.className = "text-[9px] bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-full border border-blue-500/30 uppercase";
+        document.getElementById('modulo-colaboradores').classList.add('hidden');
+      }
+
+      cargarEventos();
+    }
+
+    async function crearUsuario(e) {
+      e.preventDefault();
+      const user = document.getElementById('nuevo-user').value.trim().toLowerCase().replace(/\s+/g, '');
+      const pass = document.getElementById('nueva-pass').value.trim();
+
+      const { error } = await _supabase.from('usuarios_colaboradores').insert([{ usuario: user, password: pass }]);
+      if (error) alert("Error al registrar: " + error.message);
+      else {
+        alert("Colaborador registrado");
+        document.getElementById('nuevo-user').value = '';
+        document.getElementById('nueva-pass').value = '';
+        cargarUsuarios();
+      }
+    }
+
+    async function cargarUsuarios() {
+      const tabla = document.getElementById('tabla-usuarios');
+      const { data: usuarios } = await _supabase.from('usuarios_colaboradores').select('*');
+      document.getElementById('kpi-colabs').innerText = usuarios ? usuarios.length : 0;
+
+      if (!usuarios || usuarios.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500">Sin colaboradores.</td></tr>`;
+        return;
+      }
+
+      tabla.innerHTML = usuarios.map(u => `
+        <tr class="hover:bg-slate-900/40">
+          <td class="py-2.5 px-2 font-bold text-amber-300">${u.usuario}</td>
+          <td class="py-2.5 px-2 font-mono text-slate-400">${u.password}</td>
+          <td class="py-2.5 px-2 text-right">
+            <button type="button" onclick="eliminarUsuario(${u.id})" class="text-rose-400 font-bold px-2"><i class="fa-solid fa-trash-can"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function eliminarUsuario(id) {
+      if (!confirm("¿Eliminar usuario?")) return;
+      await _supabase.from('usuarios_colaboradores').delete().eq('id', id);
+      cargarUsuarios();
+    }
+
+    async function guardarEvento(e) {
+      e.preventDefault();
+      const tipo = document.getElementById('input-tipo').value;
+      const input = document.getElementById('input-slug').value.trim();
+      const pin = document.getElementById('input-pin').value.trim();
+      const fecha = document.getElementById('input-fecha').value;
+      const limite = document.getElementById('input-limite').value || 500;
+      const slug = input.toLowerCase().replace(/\s+/g, '-');
+
+      const autoClose = document.getElementById('check-auto-close').checked;
+      const diasVencimiento = parseInt(document.getElementById('dias-vencimiento').value) || 7;
+
+      const incGaleriaFotos = document.getElementById('inc-galeria-fotos').checked;
+      const incLibroVisitas = document.getElementById('inc-libro-visitas').checked;
+      const incTriviaNovios = document.getElementById('inc-trivia-novios').checked;
+
+      const nuevoObjeto = {
+        slug: slug,
+        nombre_evento: input.replace(/-/g, ' '),
+        pin_novios: pin,
+        fecha_evento: fecha,
+        limite_fotos: parseInt(limite),
+        estado: 'activo',
+        creado_por: usuarioActual
+      };
+
+      let { error } = await _supabase.from('eventos').insert([nuevoObjeto]);
+
+      if (error) {
+        alert("Error al guardar evento: " + error.message);
+      } else {
+        localStorage.setItem(`zoe_meta_${slug}`, JSON.stringify({ 
+          tipo, 
+          autoClose, 
+          diasVencimiento,
+          incGaleriaFotos,
+          incLibroVisitas,
+          incTriviaNovios
+        }));
+        alert("¡Evento registrado con éxito!");
+        document.getElementById('input-slug').value = '';
+        document.getElementById('input-pin').value = '';
+        cargarEventos();
+      }
+    }
+
+    async function cargarEventos() {
+      const { data: eventos } = await _supabase.from('eventos').select('*').order('created_at', { ascending: false });
+      todosLosEventos = eventos || [];
+      
+      evaluarEventosVencidos();
+      actualizarMetricas();
+      renderizarTabla();
+    }
+
+    async function evaluarEventosVencidos() {
+      const hoy = new Date();
+      hoy.setHours(0,0,0,0);
+
+      for (let ev of todosLosEventos) {
+        let meta = JSON.parse(localStorage.getItem(`zoe_meta_${ev.slug}`) || '{}');
+        let autoClose = ev.auto_close !== undefined ? ev.auto_close : meta.autoClose;
+        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : (meta.diasVencimiento || 7);
+
+        if (ev.estado !== 'inactivo' && autoClose && ev.fecha_evento) {
+          const fechaEv = new Date(ev.fecha_evento + "T00:00:00");
+          fechaEv.setDate(fechaEv.getDate() + diasExtra);
+
+          if (hoy > fechaEv) {
+            ev.estado = 'inactivo';
+            await _supabase.from('eventos').update({ estado: 'inactivo' }).eq('slug', ev.slug);
+          }
+        }
+      }
+    }
+
+    function actualizarMetricas() {
+      document.getElementById('kpi-total').innerText = todosLosEventos.length;
+      document.getElementById('kpi-activos').innerText = todosLosEventos.filter(e => e.estado !== 'inactivo').length;
+      const totalCapacidad = todosLosEventos.reduce((acc, curr) => acc + (parseInt(curr.limite_fotos) || 500), 0);
+      document.getElementById('kpi-capacidad').innerText = totalCapacidad.toLocaleString();
+    }
+
+    function renderizarTabla() {
+      const tabla = document.getElementById('tabla-eventos');
+      const textoBusqueda = document.getElementById('input-buscar').value.toLowerCase().trim();
+
+      let eventosFiltrados = todosLosEventos.filter(ev => {
+        const cumpleEstado = filtroEstadoActual === 'todos' || 
+          (filtroEstadoActual === 'activo' && ev.estado !== 'inactivo') ||
+          (filtroEstadoActual === 'inactivo' && ev.estado === 'inactivo');
+
+        const cumpleBusqueda = ev.slug.toLowerCase().includes(textoBusqueda) || 
+          (ev.creado_por && ev.creado_por.toLowerCase().includes(textoBusqueda));
+
+        return cumpleEstado && cumpleBusqueda;
+      });
+
+      if (eventosFiltrados.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500">No se encontraron eventos.</td></tr>`;
+        return;
+      }
+
+      const host = window.location.origin;
+
+      tabla.innerHTML = eventosFiltrados.map(ev => {
+        const urlGaleria = `${host}/index.html?evento=${ev.slug}`;
+        const urlNovios = `${host}/novios.html?evento=${ev.slug}`;
+        const urlPantalla = `${host}/pantalla.html?evento=${ev.slug}`;
+
+        let meta = JSON.parse(localStorage.getItem(`zoe_meta_${ev.slug}`) || '{}');
+        let tipoEv = ev.tipo_evento || meta.tipo || 'boda';
+
+        const tipoIcono = ICONOS_TIPO[tipoEv] || '<i class="fa-solid fa-star text-amber-400 mr-1.5"></i>';
+
+        let textoWS = `¡Hola! Aquí tienes los accesos para tu evento *${ev.slug.replace(/-/g, ' ')}*:\n\n📸 Galería para invitados: ${urlGaleria}\n💍 Panel de Gestión: ${urlNovios}\n🔑 PIN de Acceso: ${ev.pin_novios}\n📺 Pantalla en Vivo: ${urlPantalla}`;
+        const linkWhatsApp = `https://wa.me/?text=${encodeURIComponent(textoWS)}`;
+
+        const esActivo = (ev.estado !== 'inactivo');
+        const badgeEstado = esActivo 
+          ? `<button onclick="cambiarEstado('${ev.slug}', 'inactivo')" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold">ACTIVO</button>`
+          : `<button onclick="cambiarEstado('${ev.slug}', 'activo')" class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold">INACTIVO</button>`;
+
+        const botonEliminar = esAdmin
+          ? `<button type="button" onclick="eliminarEvento('${ev.slug}')" class="text-rose-400 font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>`
+          : `<span class="text-slate-600 text-[10px] italic"><i class="fa-solid fa-lock mr-1"></i>Protegido</span>`;
+
+        const limiteVal = ev.limite_fotos || 500;
+        let autoClose = ev.auto_close !== undefined ? ev.auto_close : meta.autoClose;
+        let diasExtra = ev.dias_vencimiento !== undefined ? ev.dias_vencimiento : (meta.diasVencimiento || 7);
+
+        return `
+          <tr class="hover:bg-slate-900/40">
+            <td class="py-4 px-2">${badgeEstado}</td>
+            <td class="py-4 px-2"><div class="font-bold text-amber-300 capitalize text-sm flex items-center">${tipoIcono} ${ev.slug.replace(/-/g, ' ')}</div></td>
+            <td class="py-4 px-2"><div class="text-xs text-slate-200 font-mono"><i class="fa-regular fa-calendar text-slate-500 mr-1"></i>${ev.fecha_evento || 'Sin fecha'}</div><div class="text-[9px] text-slate-500">${autoClose ? `Cierre auto +${diasExtra}d` : 'Manual'}</div></td>
+            <td class="py-4 px-2 text-slate-300 font-mono text-[11px] font-bold">${ev.creado_por || 'Sistema'}</td>
+            <td class="py-4 px-2"><span class="font-mono text-slate-300 font-bold">${ev.pin_novios || '----'}</span> <button onclick="editarPin('${ev.slug}', '${ev.pin_novios}')" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
+            <td class="py-4 px-2"><span class="font-mono text-slate-400 text-[11px] font-bold">${limiteVal} fotos</span> <button onclick="editarLimite('${ev.slug}', ${limiteVal})" class="text-slate-500 hover:text-amber-400 ml-1"><i class="fa-solid fa-pen text-[10px]"></i></button></td>
+            <td class="py-4 px-2 flex gap-1.5 flex-wrap">
+              <button type="button" onclick="abrirModalModulos('${ev.slug}')" class="bg-amber-400/10 text-amber-400 text-[10px] px-2 py-1 rounded border border-amber-400/30 font-bold flex items-center gap-1"><i class="fa-solid fa-list-check"></i> Módulos</button>
+              <button type="button" onclick="copiar('${urlGaleria}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Galería</button>
+              <button type="button" onclick="copiar('${urlNovios}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Clientes</button>
+              <button type="button" onclick="copiar('${urlPantalla}')" class="bg-slate-800 text-amber-400 text-[10px] px-2 py-1 rounded border border-slate-700 font-bold">Pantalla</button>
+              <button type="button" onclick="mostrarQR('${ev.slug}', '${urlGaleria}')" class="bg-purple-600/20 text-purple-300 border border-purple-500/30 text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1"><i class="fa-solid fa-qrcode"></i> QR</button>
+              <a href="${linkWhatsApp}" target="_blank" class="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-1 rounded font-bold flex items-center gap-1"><i class="fa-brands fa-whatsapp"></i> Enviar</a>
+            </td>
+            <td class="py-4 px-2 text-right">${botonEliminar}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filtrarEventos() { renderizarTabla(); }
+
+    function filtrarEstado(estado) {
+      filtroEstadoActual = estado;
+      ['todos', 'activo', 'inactivo'].forEach(b => {
+        document.getElementById(`btn-filtro-${b}`).className = (b === estado) 
+          ? "bg-amber-400 text-slate-950 font-black text-[10px] px-3 py-1.5 rounded-xl"
+          : "bg-slate-800 text-slate-400 font-bold text-[10px] px-3 py-1.5 rounded-xl border border-slate-700";
+      });
+      renderizarTabla();
+    }
+
+    async function cambiarEstado(slug, nuevoEstado) {
+      await _supabase.from('eventos').update({ estado: nuevoEstado }).eq('slug', slug);
+      cargarEventos();
+    }
+
+    /* FUNCIONES PARA EDITAR MÓDULOS DEL EVENTO */
+    function abrirModalModulos(slug) {
+      slugEventoEnEdicion = slug;
+      document.getElementById('modulos-titulo').innerText = `Módulos - ${slug.replace(/-/g, ' ')}`;
+
+      let meta = JSON.parse(localStorage.getItem(`zoe_meta_${slug}`) || '{}');
+
+      document.getElementById('edit-mod-galeria').checked = meta.incGaleriaFotos !== false;
+      document.getElementById('edit-mod-libro').checked = meta.incLibroVisitas !== false;
+      document.getElementById('edit-mod-trivia').checked = meta.incTriviaNovios !== false;
+
+      document.getElementById('modal-modulos').classList.remove('hidden');
+    }
+
+    function cerrarModalModulos() {
+      document.getElementById('modal-modulos').classList.add('hidden');
+    }
+
+    function guardarModulosModal() {
+      if (!slugEventoEnEdicion) return;
+
+      let meta = JSON.parse(localStorage.getItem(`zoe_meta_${slugEventoEnEdicion}`) || '{}');
+
+      meta.incGaleriaFotos = document.getElementById('edit-mod-galeria').checked;
+      meta.incLibroVisitas = document.getElementById('edit-mod-libro').checked;
+      meta.incTriviaNovios = document.getElementById('edit-mod-trivia').checked;
+
+      localStorage.setItem(`zoe_meta_${slugEventoEnEdicion}`, JSON.stringify(meta));
+
+      alert("¡Módulos actualizados con éxito!");
+      cerrarModalModulos();
+    }
+
+    async function editarPin(slug, pinActual) {
+      const nuevoPin = prompt("Nuevo PIN:", pinActual);
+      if (nuevoPin && nuevoPin !== pinActual) {
+        await _supabase.from('eventos').update({ pin_novios: nuevoPin }).eq('slug', slug);
+        cargarEventos();
+      }
+    }
+
+    async function editarLimite(slug, limiteActual) {
+      const nuevoLimite = prompt("Nuevo límite de fotos:", limiteActual);
+      if (nuevoLimite && !isNaN(nuevoLimite)) {
+        await _supabase.from('eventos').update({ limite_fotos: parseInt(nuevoLimite) }).eq('slug', slug);
+        cargarEventos();
+      }
+    }
+
+    async function eliminarEvento(slug) {
+      if (confirm(`¿Eliminar evento ${slug}?`)) {
+        await _supabase.from('eventos').delete().eq('slug', slug);
+        localStorage.removeItem(`zoe_meta_${slug}`);
+        cargarEventos();
+      }
+    }
+
+    function copiar(texto) {
+      navigator.clipboard.writeText(texto);
+      alert("Enlace copiado al portapapeles");
+    }
+
+    function mostrarQR(slug, url) {
+      document.getElementById('qr-titulo').innerText = `QR - ${slug.replace(/-/g, ' ')}`;
+      const container = document.getElementById('qr-container');
+      container.innerHTML = '';
+      new QRCode(container, { text: url, width: 180, height: 180 });
+      document.getElementById('modal-qr').classList.remove('hidden');
+    }
+
+    function cerrarModalQR() {
+      document.getElementById('modal-qr').classList.add('hidden');
+    }
+
+    function descargarQR() {
+      const img = document.querySelector('#qr-container img');
+      if (img) {
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `QR_Evento.png`;
+        a.click();
+      }
+    }
+  </script>
+</body>
+</html>
