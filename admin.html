@@ -679,8 +679,9 @@
         let tipoEv = ev.tipo_evento || 'boda';
         const tipoIcono = ICONOS_TIPO[tipoEv] || '<i class="fa-solid fa-star text-amber-400 mr-1.5"></i>';
 
-        let textoWS = `¡Hola! Aquí tienes los accesos para tu evento *${ev.slug.replace(/-/g, ' ')}*:\n\n📸 Galería para invitados: ${urlGaleria}\n💍 Panel de Gestión: ${urlNovios}\n🔑 PIN de Acceso: ${ev.pin_novios}\n📺 Pantalla en Vivo: ${urlPantalla}`;
-        const linkWhatsApp = `https://wa.me/?text=${encodeURIComponent(textoWS)}`;
+        // FORMATO LIMPIO PARA WHATSAPP
+        let textoWS = `¡Hola! Aquí tienes los accesos para tu evento *${ev.slug.replace(/-/g, ' ')}*:\n\n📸 Galería para invitados: ${urlGaleria}\n\n💍 Panel de Gestión: ${urlNovios}\n🔑 PIN de Acceso: ${ev.pin_novios}\n\n📺 Pantalla en Vivo: ${urlPantalla}`;
+        const linkWhatsApp = `https://api.whatsapp.com/send?text=${encodeURIComponent(textoWS)}`;
 
         const esActivo = (ev.estado !== 'inactivo');
         let autoClose = ev.auto_close !== undefined ? ev.auto_close : true;
